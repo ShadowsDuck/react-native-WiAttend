@@ -1,12 +1,26 @@
 import express from "express";
+import job from "./config/cron.js";
+import { clerkMiddleware } from "@clerk/express";
 
 const app = express();
-const port = 3000;
+const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  res.send("It's working");
+if (process.env.NODE_ENV === "production") job.start();
+
+// middleware
+app.use(express.json());
+app.use(clerkMiddleware());
+
+app.use("/api/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
 });
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`);
+// error handling middleware
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(500).json({ error: err.message || "Internal server error" });
+});
+
+app.listen(PORT, () => {
+  console.log("Server is running on PORT:", PORT);
 });
