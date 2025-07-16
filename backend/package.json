@@ -12,6 +12,8 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "@clerk/backend": "^2.4.5",
+    "@clerk/express": "^1.7.7",
     "@neondatabase/serverless": "^1.0.1",
     "@upstash/ratelimit": "^2.0.5",
     "@upstash/redis": "^1.35.1",

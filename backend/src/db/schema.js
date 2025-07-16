@@ -11,6 +11,7 @@ import {
   pgEnum,
   unique,
   index,
+  boolean,
 } from "drizzle-orm/pg-core";
 
 // -------------------- ENUM --------------------
@@ -38,11 +39,11 @@ export const attendanceStatusEnum = pgEnum("attendance_status", [
 // ตารางข้อมูลผู้ใช้
 export const users = pgTable("users", {
   user_id: text("user_id").primaryKey(),
-  student_id: varchar("student_id", { length: 20 }).notNull().unique(),
-  first_name: text("first_name").notNull(),
-  last_name: text("last_name").notNull(),
-  major: majorEnum("major").notNull(),
-  year: smallint("year").notNull(),
+  student_id: varchar("student_id", { length: 20 }).unique(),
+  first_name: text("first_name"),
+  last_name: text("last_name"),
+  major: majorEnum("major"),
+  year: smallint("year"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
@@ -95,6 +96,23 @@ export const schedules = pgTable("schedules", {
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
+// -------------------- CLASS_SESSIONS --------------------
+// ตารางวันที่เรียนรายวันของแต่ละ schedule
+
+export const class_sessions = pgTable("class_sessions", {
+  session_id: serial("session_id").primaryKey(),
+  class_id: integer("class_id")
+    .notNull()
+    .references(() => classes.class_id, { onDelete: "cascade" }),
+  schedule_id: integer("schedule_id")
+    .notNull()
+    .references(() => schedules.schedule_id, { onDelete: "cascade" }),
+  session_date: date("session_date").notNull(),
+  is_canceled: boolean("is_canceled").default(false).notNull(),
+  custom_note: text("custom_note"), // เช่น "หยุดวันแม่", "เลื่อนคาบเรียน"
+  created_at: timestamp("created_at").defaultNow().notNull(),
+});
+
 // -------------------- USER_CLASSES --------------------
 // ตารางความสัมพันธ์ระหว่างผู้ใช้กับคลาสที่เข้าร่วม
 export const user_classes = pgTable(
@@ -125,9 +143,9 @@ export const attendances = pgTable(
     class_id: integer("class_id")
       .notNull()
       .references(() => classes.class_id, { onDelete: "cascade" }),
-    schedule_id: integer("schedule_id")
+    session_id: integer("session_id")
       .notNull()
-      .references(() => schedules.schedule_id, { onDelete: "cascade" }),
+      .references(() => class_sessions.session_id, { onDelete: "cascade" }),
     checked_in_at: timestamp("checked_in_at").notNull(),
     wifi_rssi: integer("wifi_rssi").notNull(),
     status: attendanceStatusEnum("status").notNull(),
