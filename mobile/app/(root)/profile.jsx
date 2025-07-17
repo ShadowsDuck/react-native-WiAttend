@@ -1,4 +1,4 @@
-import { View, Text, Image, TextInput, TouchableOpacity } from "react-native";
+import { View, Text, Image, TouchableOpacity } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -10,12 +10,14 @@ const Profile = () => {
   const { user } = useUser();
   const router = useRouter();
 
-  const { users, loading, error, fetchUsers } = useUserProfile();
+  const { users, loading, error, fetchUserProfile } = useUserProfile();
   const handleSignOut = useSignOut();
 
   useEffect(() => {
-    if (user.id) fetchUsers(user.id);
-  }, [user.id]);
+    if (user.id) {
+      fetchUserProfile(user.id);
+    }
+  }, [user.id, fetchUserProfile]);
 
   if (loading) return <Text>Loading...</Text>;
   if (error) return <Text>Error: {error.message}</Text>;

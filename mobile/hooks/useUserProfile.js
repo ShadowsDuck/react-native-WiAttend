@@ -8,7 +8,7 @@ export const useUserProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const fetchUsers = useCallback(async (user_id) => {
+  const fetchUserProfile = useCallback(async (user_id) => {
     setLoading(true);
     setError(null);
     try {
@@ -45,7 +45,7 @@ export const useUserProfile = () => {
     users,
     loading,
     error,
-    fetchUsers,
+    fetchUserProfile,
     createUserProfile,
   };
 };
