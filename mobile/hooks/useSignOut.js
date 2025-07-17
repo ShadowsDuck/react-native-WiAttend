@@ -8,17 +8,19 @@ export const useSignOut = () => {
 
   const handleSignOut = async () => {
     try {
-      Alert.alert("Confirm", "Are you sure you want to log out?", [
+      Alert.alert("ยืนยัน", "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?", [
         {
-          text: "Cancel",
+          text: "ยกเลิก",
           style: "cancel",
         },
         {
-          text: "Logout",
+          text: "ออกจากระบบ",
           style: "destructive",
-          onPress: async () => {
-            await signOut();
-            router.replace("/(auth)/sign-in");
+          onPress: () => {
+            // ไม่ใช้ async/await ตรงนี้ เพราะ Alert ไม่รองรับ
+            signOut().then(() => {
+              router.replace("/(auth)/sign-in");
+            });
           },
         },
       ]);

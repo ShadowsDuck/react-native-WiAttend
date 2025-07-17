@@ -19,7 +19,6 @@ export default function App() {
   return (
     <View className="flex-1 bg-[#121212]">
       {/* HEADER */}
-
       <View className="flex-row items-center justify-between mb-5 mt-5 mx-8">
         <View className="flex-row items-end">
           <Text className="text-2xl font-semibold text-white">WiAttend</Text>

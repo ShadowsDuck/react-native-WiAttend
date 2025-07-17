@@ -5,12 +5,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect } from "react";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useSignOut } from "../../hooks/useSignOut.js";
+import Loading from "../../components/Loading.jsx";
 
 const Profile = () => {
   const { user } = useUser();
   const router = useRouter();
 
-  const { users, loading, error, fetchUserProfile } = useUserProfile();
+  const { users, loading, fetchUserProfile } = useUserProfile();
   const handleSignOut = useSignOut();
 
   useEffect(() => {
@@ -19,27 +20,10 @@ const Profile = () => {
     }
   }, [user.id, fetchUserProfile]);
 
-  if (loading) return <Text>Loading...</Text>;
-  if (error) return <Text>Error: {error.message}</Text>;
+  if (loading) return <Loading />;
 
   return (
     <View className="flex-1 bg-[#121212]">
-      {/* HEADER */}
-      {/* <View className="flex-row justify-between items-center p-5 border border-b-1 border-b-gray-500">
-        <View className="flex-row items-end">
-          <TouchableOpacity
-            className="mr-2 mb-1"
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color={"white"} />
-          </TouchableOpacity>
-          <Text className="text-2xl font-semibold text-white">Profile</Text>
-          <Text className="text-xl font-semibold text-gray-300 ml-2">
-            Setting
-          </Text>
-        </View>
-      </View> */}
-
       {/* HEADER */}
       <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
         <TouchableOpacity
@@ -48,6 +32,7 @@ const Profile = () => {
         >
           <Ionicons name="chevron-back" size={24} color="white" />
         </TouchableOpacity>
+
         <Text className="text-white font-semibold text-4xl">Profile</Text>
 
         <TouchableOpacity

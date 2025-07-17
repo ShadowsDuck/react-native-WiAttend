@@ -1,22 +1,23 @@
 import axios from "axios";
 import { useState, useCallback } from "react";
+import { Alert } from "react-native";
 
 const API_URL = "http://192.168.0.3:3000/api/users";
 
 export const useUserProfile = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
 
   const fetchUserProfile = useCallback(async (user_id) => {
     setLoading(true);
-    setError(null);
     try {
       const res = await axios.get(`${API_URL}/profile/${user_id}`);
       setUsers(res.data);
     } catch (error) {
-      setError(error);
       console.log("Error fetching users", error);
+      Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถดึงข้อมูลผู้ใช้ได้", [
+        { text: "ตกลง", onPress: () => console.log("OK Pressed") },
+      ]);
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,6 @@ export const useUserProfile = () => {
   return {
     users,
     loading,
-    error,
     fetchUserProfile,
     createUserProfile,
   };

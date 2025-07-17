@@ -42,7 +42,10 @@ export const useSocialAuth = () => {
       return user;
     } catch (error) {
       console.log("Error in social auth", error);
-      Alert.alert("Error", "Failed to sign in. Please try again.");
+      Alert.alert(
+        "เกิดข้อผิดพลาด",
+        "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
+      );
     } finally {
       setIsLoading(false);
     }
