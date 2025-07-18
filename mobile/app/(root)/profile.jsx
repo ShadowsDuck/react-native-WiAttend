@@ -32,9 +32,7 @@ const Profile = () => {
       {/* HEADER */}
       <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
         <BackButton router={router} />
-
         <Text className="text-white font-semibold text-4xl">Profile</Text>
-
         <TouchableOpacity
           className="bg-[#ff00007a] py-2 px-2 rounded-2xl absolute right-0"
           onPress={handleSignOut}

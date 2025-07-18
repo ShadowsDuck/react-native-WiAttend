@@ -1,81 +1,131 @@
-import { StyleSheet, View, Text } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import {
+  Animated,
+  StyleSheet,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { Dropdown } from "react-native-element-dropdown";
 import { Ionicons } from "@expo/vector-icons";
 
-const DropdownComponent = ({
+const FloatingDropdown = ({
   label,
-  icon,
-  placeholder,
+  // placeholder,
   value,
   onChange,
   items,
+  // icon,
+  error,
 }) => {
-  const renderItem = (item) => {
-    return (
-      <View style={styles.item}>
-        <Text style={styles.textItem}>{item.label}</Text>
-        {item.value === value && (
-          <Ionicons name="checkmark-circle-outline" size={20} color="white" />
-        )}
-      </View>
-    );
+  const [isFocused, setIsFocused] = useState(false);
+  const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    Animated.timing(labelAnim, {
+      toValue: isFocused || value ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  }, [labelAnim, isFocused, value]);
+
+  const labelStyle = {
+    position: "absolute",
+    // left: icon ? 40 : 18,
+    left: 18,
+    top: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [18, -10],
+    }),
+    fontSize: labelAnim.interpolate({
+      inputRange: [0, 1],
+      outputRange: [16, 12],
+    }),
+    color: error ? "#f87171" : isFocused ? "#6D28D9" : "#aaa",
+    backgroundColor: "#121212",
+    paddingHorizontal: 4,
+    zIndex: 10,
   };
 
-  return (
-    <View style={{ width: "100%" }}>
-      {label && <Text style={styles.label}>{label}</Text>}
+  const renderItem = (item) => (
+    <View style={styles.item}>
+      <Text style={styles.textItem}>{item.label}</Text>
+      {item.value === value && (
+        <Ionicons name="checkmark-circle-outline" size={20} color="white" />
+      )}
+    </View>
+  );
 
-      <Dropdown
-        style={styles.dropdown}
-        placeholderStyle={styles.placeholderStyle}
-        selectedTextStyle={styles.selectedTextStyle}
-        inputSearchStyle={styles.inputSearchStyle}
-        iconStyle={styles.iconStyle}
-        containerStyle={styles.dropdownContainer}
-        activeColor="#1e1e1e"
-        searchPlaceholderTextColor="#aaa"
-        data={items}
-        search
-        maxHeight={300}
-        labelField="label"
-        valueField="value"
-        placeholder={placeholder}
-        searchPlaceholder="ค้นหา..."
-        value={value}
-        onChange={(item) => {
-          onChange(item.value);
+  return (
+    <View style={{ width: "100%", marginBottom: error ? 20 : 10 }}>
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => {
+          dropdownRef.current?.open?.(); // สำหรับบาง version ที่ expose open()
         }}
-        renderLeftIcon={() => icon}
-        renderItem={renderItem}
-      />
+        style={{ position: "relative", minHeight: 64 }}
+      >
+        <Animated.Text style={labelStyle}>{label}</Animated.Text>
+        <Dropdown
+          ref={dropdownRef}
+          style={[
+            styles.dropdown,
+            {
+              borderColor: error
+                ? "#f87171"
+                : isFocused
+                ? "#6D28D9"
+                : "rgba(255,255,255,0.20)",
+            },
+          ]}
+          // placeholderStyle={styles.placeholderStyle}
+          selectedTextStyle={styles.selectedTextStyle}
+          inputSearchStyle={styles.inputSearchStyle}
+          iconStyle={styles.iconStyle}
+          containerStyle={styles.dropdownContainer}
+          activeColor="#1e1e1e"
+          searchPlaceholderTextColor="#aaa"
+          data={items}
+          search
+          maxHeight={300}
+          labelField="label"
+          valueField="value"
+          // placeholder={isFocused ? "" : placeholder ?? ""}
+          placeholder=""
+          searchPlaceholder="ค้นหา..."
+          value={value}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          onChange={(item) => {
+            onChange(item.value);
+            setIsFocused(false);
+          }}
+          // renderLeftIcon={() => icon}
+          renderItem={renderItem}
+        />
+      </TouchableOpacity>
+
+      {error && (
+        <Text style={{ color: "#f87171", fontSize: 12, marginTop: 4 }}>
+          {error}
+        </Text>
+      )}
     </View>
   );
 };
 
-export default DropdownComponent;
+export default FloatingDropdown;
 
 const styles = StyleSheet.create({
   dropdown: {
-    margin: 0,
     height: 64,
-    backgroundColor: "#1f1f1f",
-    borderRadius: 20,
-    borderColor: "rgba(255,255,255,0.20)",
+    backgroundColor: "#121212",
+    borderRadius: 11,
     borderWidth: 1,
-    padding: 12,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.2,
-    shadowRadius: 1.41,
-
-    elevation: 2,
-  },
-  icon: {
-    marginRight: 5,
-    color: "white",
+    paddingHorizontal: 12,
+    paddingLeft: 6,
+    justifyContent: "center",
   },
   item: {
     padding: 17,
@@ -85,27 +135,27 @@ const styles = StyleSheet.create({
   },
   textItem: {
     flex: 1,
-    fontSize: 16,
+    fontSize: 14,
     color: "white",
   },
-  placeholderStyle: {
-    fontSize: 16,
-    color: "#aaa",
-    marginLeft: 15,
-  },
+  // placeholderStyle: {
+  //   fontSize: 14,
+  //   color: "#aaa",
+  //   marginLeft: 15,
+  // },
   selectedTextStyle: {
-    fontSize: 16,
+    fontSize: 14,
     color: "white",
     marginLeft: 15,
   },
-  iconStyle: {
-    width: 25,
-    height: 25,
-    marginRight: 10,
-  },
+  // iconStyle: {
+  //   width: 25,
+  //   height: 25,
+  //   marginRight: 10,
+  // },
   inputSearchStyle: {
     height: 40,
-    fontSize: 16,
+    fontSize: 14,
     borderRadius: 16,
     color: "white",
   },

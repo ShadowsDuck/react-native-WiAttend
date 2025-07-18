@@ -16,6 +16,10 @@ import { useCallback } from "react";
 const FloatingButton = (props) => {
   const router = useRouter();
 
+  const firstValue = useSharedValue(30);
+  const secondValue = useSharedValue(30);
+  const isOpen = useSharedValue(false);
+
   useFocusEffect(
     useCallback(() => {
       return () => {
@@ -26,9 +30,6 @@ const FloatingButton = (props) => {
     }, [firstValue, secondValue, isOpen])
   );
 
-  const firstValue = useSharedValue(30);
-  const secondValue = useSharedValue(30);
-  const isOpen = useSharedValue(false);
   const progress = useDerivedValue(() =>
     isOpen.value ? withTiming(1) : withTiming(0)
   );

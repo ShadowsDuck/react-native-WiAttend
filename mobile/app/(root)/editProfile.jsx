@@ -117,24 +117,25 @@ const EditProfile = () => {
           {[
             {
               key: "studentId",
-              icon: "person-circle-outline",
-              placeholder: "กรอกรหัสนิสิตของคุณ",
+              // icon: "person-circle-outline",
+              label: "กรอกรหัสนิสิต",
             },
             {
               key: "firstName",
-              icon: "person-outline",
-              placeholder: "กรอกชื่อจริงของคุณ",
+              // icon: "person-outline",
+              label: "กรอกชื่อจริง",
             },
             {
               key: "lastName",
-              icon: "person-outline",
-              placeholder: "กรอกนามสกุลของคุณ",
+              // icon: "person-outline",
+              label: "กรอกนามสกุล",
             },
           ].map((item, index) => (
             <Input
               key={index}
-              icon={<Ionicons name={item.icon} size={24} color="white" />}
-              placeholder={item.placeholder}
+              label={item.label}
+              // icon={<Ionicons name={item.icon} size={24} color="white" />}
+              // placeholder={item.placeholder}
               value={formData[item.key]}
               onChangeText={(value) =>
                 setFormData({ ...formData, [item.key]: value })
@@ -143,8 +144,7 @@ const EditProfile = () => {
           ))}
 
           <Dropdown
-            icon={<Ionicons name="school-outline" size={24} color="white" />}
-            placeholder="เลือกสาขาของคุณ"
+            label="เลือกสาขา"
             value={formData.major}
             onChange={(val) => setFormData({ ...formData, major: val })}
             items={[
@@ -157,8 +157,7 @@ const EditProfile = () => {
           />
 
           <Dropdown
-            icon={<Ionicons name="podium-outline" size={24} color="white" />}
-            placeholder="เลือกชั้นปีของคุณ"
+            label="เลือกชั้นปี"
             value={formData.year}
             onChange={(val) => setFormData({ ...formData, year: val })}
             items={[
