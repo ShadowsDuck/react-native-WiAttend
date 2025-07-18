@@ -10,8 +10,22 @@ import Animated, {
   withTiming,
   Easing,
 } from "react-native-reanimated";
+import { useRouter, useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
 const FloatingButton = (props) => {
+  const router = useRouter();
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        isOpen.value = false;
+        firstValue.value = withTiming(30);
+        secondValue.value = withTiming(30);
+      };
+    }, [firstValue, secondValue, isOpen])
+  );
+
   const firstValue = useSharedValue(30);
   const secondValue = useSharedValue(30);
   const isOpen = useSharedValue(false);
@@ -72,22 +86,26 @@ const FloatingButton = (props) => {
     <View className="flex-1">
       {/* Join Icon */}
       <Animated.View style={[styles.contentContainer, secondIcon]}>
-        <View style={styles.iconContainer}>
-          <Image
-            source={require("../assets/images/icon-join.png")}
-            style={styles.icon}
-          />
-        </View>
+        <Pressable onPress={() => router.push("/joinClass")}>
+          <View style={styles.iconContainer}>
+            <Image
+              source={require("../assets/images/icon-join.png")}
+              style={styles.icon}
+            />
+          </View>
+        </Pressable>
       </Animated.View>
 
       {/* Create Icon */}
       <Animated.View style={[styles.contentContainer, firstIcon]}>
-        <View style={styles.iconContainer}>
-          <Image
-            source={require("../assets/images/icon-create.png")}
-            style={styles.icon}
-          />
-        </View>
+        <Pressable onPress={() => router.push("/createClass")}>
+          <View style={styles.iconContainer}>
+            <Image
+              source={require("../assets/images/icon-create.png")}
+              style={styles.icon}
+            />
+          </View>
+        </Pressable>
       </Animated.View>
 
       <Pressable style={styles.contentContainer} onPress={() => handlePress()}>
