@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import Loading from "../../components/Loading.jsx";
@@ -117,25 +116,20 @@ const EditProfile = () => {
           {[
             {
               key: "studentId",
-              // icon: "person-circle-outline",
               label: "กรอกรหัสนิสิต",
             },
             {
               key: "firstName",
-              // icon: "person-outline",
               label: "กรอกชื่อจริง",
             },
             {
               key: "lastName",
-              // icon: "person-outline",
               label: "กรอกนามสกุล",
             },
           ].map((item, index) => (
             <Input
               key={index}
               label={item.label}
-              // icon={<Ionicons name={item.icon} size={24} color="white" />}
-              // placeholder={item.placeholder}
               value={formData[item.key]}
               onChangeText={(value) =>
                 setFormData({ ...formData, [item.key]: value })

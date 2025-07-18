@@ -9,15 +9,7 @@ import {
 import { Dropdown } from "react-native-element-dropdown";
 import { Ionicons } from "@expo/vector-icons";
 
-const FloatingDropdown = ({
-  label,
-  // placeholder,
-  value,
-  onChange,
-  items,
-  // icon,
-  error,
-}) => {
+const FloatingDropdown = ({ label, value, onChange, items, error }) => {
   const [isFocused, setIsFocused] = useState(false);
   const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
   const dropdownRef = useRef(null);
@@ -32,7 +24,6 @@ const FloatingDropdown = ({
 
   const labelStyle = {
     position: "absolute",
-    // left: icon ? 40 : 18,
     left: 18,
     top: labelAnim.interpolate({
       inputRange: [0, 1],
@@ -79,7 +70,6 @@ const FloatingDropdown = ({
                 : "rgba(255,255,255,0.20)",
             },
           ]}
-          // placeholderStyle={styles.placeholderStyle}
           selectedTextStyle={styles.selectedTextStyle}
           inputSearchStyle={styles.inputSearchStyle}
           iconStyle={styles.iconStyle}
@@ -91,7 +81,6 @@ const FloatingDropdown = ({
           maxHeight={300}
           labelField="label"
           valueField="value"
-          // placeholder={isFocused ? "" : placeholder ?? ""}
           placeholder=""
           searchPlaceholder="ค้นหา..."
           value={value}
@@ -101,7 +90,6 @@ const FloatingDropdown = ({
             onChange(item.value);
             setIsFocused(false);
           }}
-          // renderLeftIcon={() => icon}
           renderItem={renderItem}
         />
       </TouchableOpacity>
@@ -138,21 +126,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "white",
   },
-  // placeholderStyle: {
-  //   fontSize: 14,
-  //   color: "#aaa",
-  //   marginLeft: 15,
-  // },
   selectedTextStyle: {
     fontSize: 14,
     color: "white",
     marginLeft: 15,
   },
-  // iconStyle: {
-  //   width: 25,
-  //   height: 25,
-  //   marginRight: 10,
-  // },
   inputSearchStyle: {
     height: 40,
     fontSize: 14,

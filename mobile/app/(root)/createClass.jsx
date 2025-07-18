@@ -2,7 +2,6 @@ import { View, Text, TouchableOpacity, ScrollView } from "react-native";
 import BackButton from "../../components/BackButton";
 import { useRouter } from "expo-router";
 import Input from "../../components/Input";
-import { Ionicons } from "@expo/vector-icons";
 import { useState } from "react";
 
 const CreateClass = () => {

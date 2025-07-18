@@ -3,14 +3,12 @@ import { useEffect, useRef, useState } from "react";
 
 const Input = ({
   label,
-  // placeholder,
   onChangeText,
   value,
   inputRef,
   secureTextEntry,
   keyboardType,
   editable = true,
-  // icon,
   error,
   ...rest
 }) => {
@@ -27,7 +25,6 @@ const Input = ({
 
   const labelStyle = {
     position: "absolute",
-    // left: icon ? 40 : 18,
     left: 18,
     top: labelAnim.interpolate({
       inputRange: [0, 1],
@@ -56,11 +53,8 @@ const Input = ({
       >
         <Animated.Text style={labelStyle}>{label}</Animated.Text>
         <View className="flex-row items-center gap-3">
-          {/* {icon && icon} */}
           <TextInput
             className="flex-1 text-white text-base pt-1 ml-1"
-            // placeholder={isFocused ? "" : placeholder}
-            // placeholderTextColor="#aaa"
             onChangeText={onChangeText}
             value={value}
             ref={inputRef}
