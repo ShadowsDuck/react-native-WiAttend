@@ -170,7 +170,7 @@ const EditProfile = () => {
           />
 
           <TouchableOpacity
-            className="bg-blue-500 py-3 mt-5 rounded-xl"
+            className="bg-[#0F56B3] py-4 mt-5 rounded-xl"
             onPress={handleSave}
           >
             <Text className="text-white text-center font-semibold">

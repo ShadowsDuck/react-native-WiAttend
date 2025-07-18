@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
+import FloatingButton from "../../components/FloatingButton";
 
 export default function App() {
   const { user } = useUser();
@@ -19,10 +20,10 @@ export default function App() {
   return (
     <View className="flex-1 bg-[#121212]">
       {/* HEADER */}
-      <View className="flex-row items-center justify-between mb-5 mt-5 mx-8">
+      <View className="flex-row items-center justify-between mb-5 mt-5 px-8">
         <View className="flex-row items-end">
-          <Text className="text-2xl font-semibold text-white">WiAttend</Text>
-          <Text className="text-[20px] font-medium text-gray-300 ml-2">
+          <Text className="text-3xl font-semibold text-white">WiAttend</Text>
+          <Text className="text-[24px] font-medium text-gray-300 ml-2">
             Classroom
           </Text>
         </View>
@@ -40,6 +41,9 @@ export default function App() {
           </View>
         </TouchableOpacity>
       </View>
+
+      {/* CONTENT */}
+      <FloatingButton />
     </View>
   );
 }

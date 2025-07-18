@@ -1,6 +1,16 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
+const {
+  wrapWithReanimatedMetroConfig,
+} = require("react-native-reanimated/metro-config");
 
-const config = getDefaultConfig(__dirname);
+// สร้าง config เริ่มต้น
+let config = getDefaultConfig(__dirname);
 
-module.exports = withNativeWind(config, { input: "./global.css" });
+// เพิ่ม NativeWind config
+config = withNativeWind(config, { input: "./global.css" });
+
+// เพิ่ม Reanimated config
+config = wrapWithReanimatedMetroConfig(config);
+
+module.exports = config;

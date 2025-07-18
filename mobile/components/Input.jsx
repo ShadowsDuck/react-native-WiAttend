@@ -22,7 +22,7 @@ const Input = ({
       <View
         className={`flex-row items-center border ${
           error ? "border-red-500" : "border-white/20"
-        } rounded-3xl px-4 py-3 gap-3 bg-white/5`}
+        } rounded-3xl px-4 py-3 gap-3 bg-[#1f1f1f]`}
       >
         {icon && icon}
         <TextInput
