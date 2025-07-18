@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import * as WebBrowser from "expo-web-browser";
 import * as AuthSession from "expo-auth-session";
-import { useSSO, useAuth } from "@clerk/clerk-expo";
+import { useSSO } from "@clerk/clerk-expo";
 import { Alert } from "react-native";
 import { useUserProfile } from "./useUserProfile";
 
@@ -22,7 +22,6 @@ export const useSocialAuth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { startSSOFlow } = useSSO();
 
-  const { getToken } = useAuth();
   const { createUserProfile } = useUserProfile();
 
   const handleSocialAuth = async (provider) => {
@@ -37,8 +36,7 @@ export const useSocialAuth = () => {
         await setActive({ session: createdSessionId });
       }
 
-      const token = await getToken();
-      const user = await createUserProfile(token); // สร้าง user profile ใน DB ของเรา
+      const user = await createUserProfile(); // สร้าง user profile ใน DB ของเรา
       return user;
     } catch (error) {
       console.log("Error in social auth", error);

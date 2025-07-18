@@ -1,10 +1,13 @@
 import axios from "axios";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
+import { useAuth } from "@clerk/clerk-expo";
 
 const API_URL = "http://192.168.0.3:3000/api/users";
 
 export const useUserProfile = () => {
+  const { getToken } = useAuth();
+
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
 
@@ -23,8 +26,10 @@ export const useUserProfile = () => {
     }
   }, []);
 
-  const createUserProfile = async (token) => {
+  const createUserProfile = async () => {
     try {
+      const token = await getToken();
+
       const res = await axios.post(
         `${API_URL}/profile`,
         {}, // ถ้า backend ไม่ต้องการ body
@@ -42,10 +47,44 @@ export const useUserProfile = () => {
     }
   };
 
+  const updateUserProfile = useCallback(
+    async (updatedData) => {
+      setLoading(true);
+      try {
+        const token = await getToken();
+
+        const res = await axios.put(
+          `${API_URL}/profile/editProfile`,
+          updatedData,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        setUsers(res.data);
+        return res.data;
+      } catch (error) {
+        console.error(
+          "❌ Error updating profile:",
+          error.response?.data || error
+        );
+        Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถอัปเดตข้อมูลได้");
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
   return {
     users,
     loading,
     fetchUserProfile,
     createUserProfile,
+    updateUserProfile,
   };
 };

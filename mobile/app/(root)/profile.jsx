@@ -2,10 +2,12 @@ import { View, Text, Image, TouchableOpacity } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useEffect } from "react";
+import { useCallback } from "react";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useSignOut } from "../../hooks/useSignOut.js";
 import Loading from "../../components/Loading.jsx";
+import BackButton from "../../components/BackButton.jsx";
+import { useFocusEffect } from "@react-navigation/native";
 
 const Profile = () => {
   const { user } = useUser();
@@ -14,11 +16,14 @@ const Profile = () => {
   const { users, loading, fetchUserProfile } = useUserProfile();
   const handleSignOut = useSignOut();
 
-  useEffect(() => {
-    if (user.id) {
-      fetchUserProfile(user.id);
-    }
-  }, [user.id, fetchUserProfile]);
+  // โหลดข้อมูลผู้ใช้ทุกครั้งที่หน้าจอถูกโฟกัส
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        fetchUserProfile(user.id);
+      }
+    }, [user?.id, fetchUserProfile])
+  );
 
   if (loading) return <Loading />;
 
@@ -26,12 +31,7 @@ const Profile = () => {
     <View className="flex-1 bg-[#121212]">
       {/* HEADER */}
       <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
-        <TouchableOpacity
-          className="bg-[#3f3f3f] py-2 px-2 rounded-2xl absolute left-0"
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={24} color="white" />
-        </TouchableOpacity>
+        <BackButton router={router} />
 
         <Text className="text-white font-semibold text-4xl">Profile</Text>
 
@@ -60,7 +60,7 @@ const Profile = () => {
           {/* Pencil Button */}
           <TouchableOpacity
             className="absolute -bottom-2 -right-2 p-[6px] rounded-full bg-white"
-            onPress={() => {}}
+            onPress={() => router.push("/editProfile")}
           >
             <Ionicons name="pencil-outline" size={20} color="black" />
           </TouchableOpacity>
@@ -78,13 +78,22 @@ const Profile = () => {
           </Text>
         </View>
 
-        {/* OTHER */}
         <View className="w-full px-5 mt-8 gap-4">
           {[
             {
               icon: "person-circle-outline",
               label: "รหัสนิสิต",
               value: users?.student_id || "NULL",
+            },
+            {
+              icon: "person-outline",
+              label: "ชื่อ-นามสกุล",
+              value:
+                users?.first_name || users?.last_name
+                  ? `${users?.first_name ?? ""} ${
+                      users?.last_name ?? ""
+                    }`.trim()
+                  : "NULL",
             },
             {
               icon: "school-outline",
@@ -99,22 +108,24 @@ const Profile = () => {
             {
               icon: "mail-outline",
               label: "อีเมล",
-              value: user?.primaryEmailAddress?.emailAddress || "NULL",
+              value: user?.primaryEmailAddress?.emailAddress || null,
             },
-          ].map((item, index) => (
-            <View
-              key={index}
-              className="bg-white/10 rounded-xl px-5 py-4 flex-row items-center gap-4"
-            >
-              <Ionicons name={item.icon} size={30} color="#fff" />
-              <View>
-                <Text className="text-white/70 text-sm">{item.label}</Text>
-                <Text className="text-white text-lg font-semibold">
-                  {item.value}
-                </Text>
+          ]
+            .filter((item) => item.value !== null)
+            .map((item, index) => (
+              <View
+                key={index}
+                className="bg-white/10 rounded-xl px-5 py-4 flex-row items-center gap-4"
+              >
+                <Ionicons name={item.icon} size={30} color="#fff" />
+                <View>
+                  <Text className="text-white/70 text-sm">{item.label}</Text>
+                  <Text className="text-white text-lg font-semibold">
+                    {item.value}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
+            ))}
         </View>
       </View>
     </View>

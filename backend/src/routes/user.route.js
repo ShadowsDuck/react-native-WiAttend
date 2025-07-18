@@ -3,6 +3,7 @@ import { requireAuth } from "@clerk/express";
 import {
   getUserProfileByUserId,
   createUserProfile,
+  updateUserProfile,
 } from "../controllers/user.controller.js";
 
 const router = express.Router();
@@ -12,5 +13,6 @@ router.get("/profile/:user_id", getUserProfileByUserId);
 
 // protected routes
 router.post("/profile", requireAuth(), createUserProfile);
+router.put("/profile/editProfile", requireAuth(), updateUserProfile);
 
 export default router;
