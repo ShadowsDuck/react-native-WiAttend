@@ -58,6 +58,7 @@ export const classes = pgTable("classes", {
   semester_start_date: date("semester_start_date").notNull(),
   semester_weeks: integer("semester_weeks").notNull(),
   description: text("description"),
+  join_code: varchar("join_code", { length: 10 }).notNull().unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 
