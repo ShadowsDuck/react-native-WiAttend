@@ -87,7 +87,7 @@ const FloatingButton = (props) => {
     <View className="flex-1">
       {/* Join Icon */}
       <Animated.View style={[styles.contentContainer, secondIcon]}>
-        <Pressable onPress={() => router.push("/joinClass")}>
+        <Pressable onPress={() => router.push("/joinClassroom")}>
           <View style={styles.iconContainer}>
             <Image
               source={require("../assets/images/icon-join.png")}
@@ -99,7 +99,7 @@ const FloatingButton = (props) => {
 
       {/* Create Icon */}
       <Animated.View style={[styles.contentContainer, firstIcon]}>
-        <Pressable onPress={() => router.push("/createClass")}>
+        <Pressable onPress={() => router.push("/createClassroom")}>
           <View style={styles.iconContainer}>
             <Image
               source={require("../assets/images/icon-create.png")}

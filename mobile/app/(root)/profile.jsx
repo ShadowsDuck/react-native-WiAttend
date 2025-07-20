@@ -22,7 +22,7 @@ const Profile = () => {
       if (user?.id) {
         fetchUserProfile(user.id);
       }
-    }, [user?.id, fetchUserProfile])
+    }, [user?.id])
   );
 
   if (loading) return <Loading />;

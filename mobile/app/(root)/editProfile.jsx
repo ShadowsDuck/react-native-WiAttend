@@ -116,15 +116,15 @@ const EditProfile = () => {
           {[
             {
               key: "studentId",
-              label: "กรอกรหัสนิสิต",
+              label: "รหัสนิสิต",
             },
             {
               key: "firstName",
-              label: "กรอกชื่อจริง",
+              label: "ชื่อจริง",
             },
             {
               key: "lastName",
-              label: "กรอกนามสกุล",
+              label: "นามสกุล",
             },
           ].map((item, index) => (
             <Input
@@ -138,9 +138,9 @@ const EditProfile = () => {
           ))}
 
           <Dropdown
-            label="เลือกสาขา"
+            label="สาขา"
             value={formData.major}
-            onChange={(val) => setFormData({ ...formData, major: val })}
+            onChange={(value) => setFormData({ ...formData, major: value })}
             items={[
               { label: "Computer Science", value: "Computer Science" },
               {
@@ -151,9 +151,9 @@ const EditProfile = () => {
           />
 
           <Dropdown
-            label="เลือกชั้นปี"
+            label="ชั้นปี"
             value={formData.year}
-            onChange={(val) => setFormData({ ...formData, year: val })}
+            onChange={(value) => setFormData({ ...formData, year: value })}
             items={[
               { label: "ปี 1", value: 1 },
               { label: "ปี 2", value: 2 },

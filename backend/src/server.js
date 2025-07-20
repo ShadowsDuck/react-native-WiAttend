@@ -4,6 +4,7 @@ import { clerkMiddleware } from "@clerk/express";
 import { db } from "../src/config/db.js";
 import { users } from "../src/db/schema.js";
 import userRoutes from "./routes/user.route.js";
+import classRoutes from "./routes/class.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -11,14 +12,15 @@ const PORT = process.env.PORT || 3000;
 // if (process.env.NODE_ENV === "production") job.start();
 
 // middleware
-app.use(express.json());
 app.use(clerkMiddleware());
+app.use(express.json());
 
 app.use("/api/health", (req, res) => {
   res.status(200).json({ status: "ok" });
 });
 
 app.use("/api/users", userRoutes);
+app.use("/api/classes", classRoutes);
 
 // error handling middleware
 app.use((err, req, res, next) => {

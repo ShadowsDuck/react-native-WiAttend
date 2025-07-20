@@ -1,0 +1,148 @@
+import axios from "axios";
+import { useState } from "react";
+import { useAuth, useUser } from "@clerk/clerk-expo";
+import { API_URL } from "../constants/api.js";
+
+export const useClassroom = () => {
+  const { getToken } = useAuth();
+  const { user } = useUser();
+
+  const [classrooms, setClassrooms] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const createClassroom = async (data) => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+
+      const res = await axios.post(
+        `${API_URL}/classes`,
+        {
+          subject_name: data.subject_name,
+          semester_start_date: data.semester_start_date,
+          semester_weeks: parseInt(data.semester_weeks),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return res.data;
+    } catch (error) {
+      console.error(
+        "❌ Error creating classroom:",
+        error.response?.data || error
+      );
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserClasses = async () => {
+    if (!user) {
+      console.warn("User not ready");
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const token = await getToken();
+
+      const res = await axios.get(`${API_URL}/classes`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (Array.isArray(res.data)) {
+        setClassrooms(res.data);
+      } else {
+        console.warn("Unexpected response", res.data);
+        setClassrooms([]);
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error fetching classes",
+        error.response?.data || error.message
+      );
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const joinClassroom = async (data) => {
+    setLoading(true);
+    try {
+      const token = await getToken();
+
+      const res = await axios.post(
+        `${API_URL}/classes/join`,
+        {
+          join_code: data.join_code,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return res.data;
+    } catch (error) {
+      console.error("❌ Error join classroom:", error.response?.data || error);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // const updateUserProfile = useCallback(
+  //   async (updatedData) => {
+  //     setLoading(true);
+  //     try {
+  //       const token = await getToken();
+
+  //       const res = await axios.put(
+  //         `${API_URL}/profile/editProfile`,
+  //         updatedData,
+  //         {
+  //           headers: {
+  //             "Content-Type": "application/json",
+  //             Authorization: `Bearer ${token}`,
+  //           },
+  //         }
+  //       );
+
+  //       setUsers(res.data);
+  //       return res.data;
+  //     } catch (error) {
+  //       console.error(
+  //         "❌ Error updating profile:",
+  //         error.response?.data || error
+  //       );
+  //       Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถอัปเดตข้อมูลได้");
+  //       throw error;
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   },
+  //   [getToken]
+  // );
+
+  return {
+    classrooms,
+    loading,
+    error,
+    fetchUserClasses,
+    createClassroom,
+    joinClassroom,
+  };
+};

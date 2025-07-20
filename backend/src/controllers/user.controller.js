@@ -1,7 +1,6 @@
 import { db } from "../config/db.js";
 import { users } from "../db/schema.js";
-import { eq, desc, and, gt, lt } from "drizzle-orm";
-import { sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { getAuth } from "@clerk/express";
 
 export async function getUserProfileByUserId(req, res) {
@@ -11,8 +10,7 @@ export async function getUserProfileByUserId(req, res) {
     const user = await db
       .select()
       .from(users)
-      .where(eq(users.user_id, user_id))
-      .orderBy(desc(users.created_at));
+      .where(eq(users.user_id, user_id));
 
     if (user.length === 0) {
       return res.status(404).json({ error: "User not found" });
@@ -20,7 +18,7 @@ export async function getUserProfileByUserId(req, res) {
 
     res.status(200).json(user[0]);
   } catch (error) {
-    console.log("Error getting the transactions", error);
+    console.log("Error getting the user", error);
     res.status(500).json({ message: "Internal server error" });
   }
 }
@@ -28,7 +26,6 @@ export async function getUserProfileByUserId(req, res) {
 export async function createUserProfile(req, res) {
   try {
     const { userId } = getAuth(req);
-    console.log("🔐 userId from Clerk token:", userId);
 
     if (!userId) {
       return res.status(401).json({ message: "Unauthorized" });
@@ -44,7 +41,6 @@ export async function createUserProfile(req, res) {
     }
 
     const user = await db.insert(users).values({ user_id: userId }).returning();
-    console.log("✅ New user created:", user);
 
     res.status(201).json(user[0]);
   } catch (error) {
@@ -63,7 +59,7 @@ export async function updateUserProfile(req, res) {
 
     // ตรวจสอบว่า user มีอยู่ใน db มั้ย
     const existingUser = await db.query.users.findFirst({
-      where: eq(users.user_id, userId),
+      where: (users, { eq }) => eq(users.user_id, userId),
     });
 
     if (!existingUser) {

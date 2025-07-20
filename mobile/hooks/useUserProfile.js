@@ -2,8 +2,7 @@ import axios from "axios";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
-
-const API_URL = "http://192.168.0.3:3000/api/users";
+import { API_URL } from "../constants/api.js";
 
 export const useUserProfile = () => {
   const { getToken } = useAuth();
@@ -14,7 +13,7 @@ export const useUserProfile = () => {
   const fetchUserProfile = useCallback(async (user_id) => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/profile/${user_id}`);
+      const res = await axios.get(`${API_URL}/users/profile/${user_id}`);
       setUsers(res.data);
     } catch (error) {
       console.log("Error fetching users", error);
@@ -31,7 +30,7 @@ export const useUserProfile = () => {
       const token = await getToken();
 
       const res = await axios.post(
-        `${API_URL}/profile`,
+        `${API_URL}/users/profile`,
         {}, // ถ้า backend ไม่ต้องการ body
         {
           headers: {
@@ -54,7 +53,7 @@ export const useUserProfile = () => {
         const token = await getToken();
 
         const res = await axios.put(
-          `${API_URL}/profile/editProfile`,
+          `${API_URL}/users/profile/editProfile`,
           updatedData,
           {
             headers: {
