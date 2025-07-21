@@ -64,6 +64,7 @@ export default function ClassCard({ item }) {
             </View>
           ) : (
             <Text className={`${design.subtextColor} text-sm font-medium mt-1`}>
+              By:{" "}
               {item.owner_name ||
                 `${item.owner_first_name || ""} ${
                   item.owner_last_name || ""
