@@ -1,8 +1,8 @@
 import { db } from "../config/db.js";
-import { classes, user_classes } from "../db/schema.js";
+import { classes, user_classes, users } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, exists, sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 
 export async function getUserClasses(req, res) {
   try {
@@ -24,11 +24,18 @@ export async function getUserClasses(req, res) {
         description: classes.description,
         join_code: classes.join_code,
         owner_user_id: classes.owner_user_id,
-        role: sql`'participant'`.as("role"), // Mark as participant
+        // Add owner name fields
+        owner_first_name: users.first_name,
+        owner_last_name: users.last_name,
+        role: sql`'participant'`.as("role"),
+        joined_at: user_classes.created_at,
       })
       .from(user_classes)
       .innerJoin(classes, eq(user_classes.class_id, classes.class_id))
-      .where(eq(user_classes.user_id, userId));
+      // Join with users table to get owner information
+      .innerJoin(users, eq(classes.owner_user_id, users.user_id))
+      .where(eq(user_classes.user_id, userId))
+      .orderBy(user_classes.created_at);
 
     // Get classes where user is the owner
     const ownedClasses = await db
@@ -40,22 +47,50 @@ export async function getUserClasses(req, res) {
         description: classes.description,
         join_code: classes.join_code,
         owner_user_id: classes.owner_user_id,
-        role: sql`'owner'`.as("role"), // Mark as owner
+        // Add owner name fields
+        owner_first_name: users.first_name,
+        owner_last_name: users.last_name,
+        role: sql`'owner'`.as("role"),
+        joined_at: user_classes.created_at,
       })
       .from(classes)
-      .where(eq(classes.owner_user_id, userId));
+      // Join with users table to get owner information
+      .innerJoin(users, eq(classes.owner_user_id, users.user_id))
+      .leftJoin(
+        user_classes,
+        sql`${classes.class_id} = ${user_classes.class_id} AND ${user_classes.user_id} = ${userId}`
+      )
+      .where(eq(classes.owner_user_id, userId))
+      .orderBy(user_classes.created_at);
 
-    // Combine both arrays and remove duplicates (in case owner is also in user_classes)
+    // Combine both arrays and remove duplicates
     const allClasses = [...participatedClasses, ...ownedClasses];
     const uniqueClasses = allClasses.filter(
       (cls, index, self) =>
         index === self.findIndex((c) => c.class_id === cls.class_id)
     );
 
-    // Sort by class_id for consistent ordering
-    uniqueClasses.sort((a, b) => a.class_id - b.class_id);
+    // Sort by joined_at from oldest to newest
+    uniqueClasses.sort((a, b) => {
+      if (!a.joined_at && !b.joined_at) return a.class_id - b.class_id;
+      if (!a.joined_at) return 1;
+      if (!b.joined_at) return -1;
+      return new Date(a.joined_at) - new Date(b.joined_at);
+    });
 
-    return res.status(200).json(uniqueClasses);
+    // Transform the data to include formatted owner name
+    const classesWithOwnerName = uniqueClasses.map((cls) => ({
+      ...cls,
+      owner_name: `${cls.owner_first_name || ""} ${
+        cls.owner_last_name || ""
+      }`.trim(),
+      owner_full_name: {
+        first_name: cls.owner_first_name,
+        last_name: cls.owner_last_name,
+      },
+    }));
+
+    return res.status(200).json(classesWithOwnerName);
   } catch (error) {
     console.error("❌ Error getting classes", error);
     res.status(500).json({ message: "Internal server error" });

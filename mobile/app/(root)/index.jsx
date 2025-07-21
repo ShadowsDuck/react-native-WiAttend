@@ -1,54 +1,34 @@
 import {
   View,
+  FlatList,
+  RefreshControl,
   Text,
-  Alert,
   TouchableOpacity,
   Image,
-  FlatList,
-  ActivityIndicator,
-  RefreshControl,
 } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
-import { useRouter } from "expo-router";
-import FloatingButton from "../../components/FloatingButton";
-import { useClassroom } from "../../hooks/useClassroom";
 import { useEffect, useState } from "react";
+import FloatingButton from "../../components/FloatingButton";
+import ClassCard from "../../components/ClassCard";
 import Loading from "../../components/Loading";
+import { useClassroom } from "../../hooks/useClassroom";
+import { useRouter } from "expo-router";
 
 export default function App() {
-  const { user, isLoaded } = useUser();
   const router = useRouter();
-
+  const { user, isLoaded } = useUser();
   const { classrooms, loading, error, fetchUserClasses } = useClassroom();
-
   const [refreshing, setRefreshing] = useState(false);
 
-  // โหลดข้อมูลครั้งแรก
   useEffect(() => {
-    if (isLoaded && user) {
-      fetchUserClasses();
-    }
+    if (isLoaded && user) fetchUserClasses();
   }, [isLoaded]);
 
-  // ฟังก์ชันดึงข้อมูลใหม่เวลารีเฟรช
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchUserClasses();
     setRefreshing(false);
   };
-
-  // Render item แต่ละอัน
-  const renderClassroomItem = ({ item }) => (
-    <TouchableOpacity
-      onPress={() => router.push(`/classroom/${item.class_id}`)}
-      className="bg-gray-800 p-4 m-2 rounded-lg"
-    >
-      <Text className="text-white text-lg font-semibold">
-        {item.subject_name}
-      </Text>
-      <Text className="text-gray-400">Owner ID: {item.owner_user_id}</Text>
-    </TouchableOpacity>
-  );
 
   if (loading && !refreshing) return <Loading />;
 
@@ -74,38 +54,32 @@ export default function App() {
         </TouchableOpacity>
       </View>
 
-      {/* CONTENT */}
-      {loading && !refreshing ? (
-        <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#ffffff" />
-          <Text className="text-white mt-2">กำลังโหลด...</Text>
-        </View>
-      ) : error ? (
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-red-400 text-lg">เกิดข้อผิดพลาด</Text>
-          <TouchableOpacity
-            onPress={fetchUserClasses}
-            className="mt-4 bg-blue-500 p-2 rounded"
-          >
-            <Text className="text-white">ลองใหม่</Text>
-          </TouchableOpacity>
-        </View>
+      {error ? (
+        <Text className="text-red-400 text-center mt-10">เกิดข้อผิดพลาด</Text>
       ) : classrooms.length === 0 ? (
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-gray-400 text-lg">ไม่มีชั้นเรียน</Text>
-        </View>
+        <Text className="text-gray-400 text-center mt-10">ไม่มีชั้นเรียน</Text>
       ) : (
         <FlatList
           data={classrooms}
-          renderItem={renderClassroomItem}
+          renderItem={({ item }) => <ClassCard item={item} />}
           keyExtractor={(item) => item.class_id.toString()}
-          contentContainerStyle={{ padding: 8 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#ffffff"
+            />
           }
+          ListHeaderComponent={() => (
+            <Text className="text-gray-400 text-sm px-6 mb-2 mt-4">
+              ชั้นเรียนที่คุณเข้าร่วม
+            </Text>
+          )}
+          showsVerticalScrollIndicator={false}
+          ItemSeparatorComponent={() => <View className="h-2" />}
         />
       )}
-
       <FloatingButton />
     </View>
   );
