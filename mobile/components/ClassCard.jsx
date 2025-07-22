@@ -78,11 +78,7 @@ export default function ClassCard({ item }) {
               <Text
                 className={`${design.subtextColor} text-white text-sm font-medium mt-1`}
               >
-                By:{" "}
-                {item.owner_name ||
-                  `${item.owner_first_name || ""} ${
-                    item.owner_last_name || ""
-                  }`.trim()}
+                By: {item.owner_name}
               </Text>
             )}
           </View>

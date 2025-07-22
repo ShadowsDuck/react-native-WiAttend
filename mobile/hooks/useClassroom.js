@@ -9,7 +9,7 @@ export const useClassroom = () => {
 
   const [classrooms, setClassrooms] = useState([]);
   const [classInfo, setClassInfo] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   const createClassroom = async (data) => {

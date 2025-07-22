@@ -9,98 +9,87 @@ import {
 } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, sql, inArray } from "drizzle-orm";
+import { eq, sql, or, asc, and } from "drizzle-orm";
 
 export async function getUserClasses(req, res) {
   try {
     const { userId } = getAuth(req);
 
     if (!userId) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized - No user ID found in token" });
+      return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // Get classes where user is a participant (joined classes)
-    const participatedClasses = await db
+    // --- Query หลัก: ดึงข้อมูลคลาสทั้งหมดในครั้งเดียว ---
+    const userClasses = await db
       .select({
+        // --- ส่วนที่ 1: เลือกข้อมูลพื้นฐานของคลาสจากตาราง 'classes' ---
         class_id: classes.class_id,
         subject_name: classes.subject_name,
-        semester_start_date: classes.semester_start_date,
-        semester_weeks: classes.semester_weeks,
-        description: classes.description,
+        // description: classes.description,
         join_code: classes.join_code,
         owner_user_id: classes.owner_user_id,
-        // Add owner name fields
-        owner_first_name: users.first_name,
-        owner_last_name: users.last_name,
-        role: sql`'participant'`.as("role"),
-        joined_at: user_classes.created_at,
-      })
-      .from(user_classes)
-      .innerJoin(classes, eq(user_classes.class_id, classes.class_id))
-      // Join with users table to get owner information
-      .innerJoin(users, eq(classes.owner_user_id, users.user_id))
-      .where(eq(user_classes.user_id, userId))
-      .orderBy(user_classes.created_at);
 
-    // Get classes where user is the owner
-    const ownedClasses = await db
-      .select({
-        class_id: classes.class_id,
-        subject_name: classes.subject_name,
-        semester_start_date: classes.semester_start_date,
-        semester_weeks: classes.semester_weeks,
-        description: classes.description,
-        join_code: classes.join_code,
-        owner_user_id: classes.owner_user_id,
-        // Add owner name fields
-        owner_first_name: users.first_name,
-        owner_last_name: users.last_name,
-        role: sql`'owner'`.as("role"),
+        // --- ส่วนที่ 2: สร้างข้อมูลใหม่ขึ้นมาด้วยพลังของ SQL เพื่อลดภาระฝั่ง Client ---
+
+        // สร้าง 'owner_name' โดยการนำชื่อจริงและนามสกุลจากตาราง 'users' มาต่อกัน
+        // ใช้ CONCAT() ของ SQL เพื่อต่อสตริง และ TRIM() เพื่อลบช่องว่างส่วนเกินที่อาจเกิดขึ้น
+        owner_name:
+          sql`TRIM(CONCAT(${users.first_name}, ' ', ${users.last_name}))`.as(
+            "owner_name"
+          ),
+
+        // สร้าง 'role' เพื่อระบุบทบาทของผู้ใช้ในคลาสนี้
+        // ใช้ CASE WHEN ของ SQL เพื่อสร้างเงื่อนไข:
+        // - ถ้า owner_user_id ของคลาสตรงกับ userId ปัจจุบัน -> บทบาทคือ 'owner'
+        // - กรณีอื่นๆ ทั้งหมด -> บทบาทคือ 'participant'
+        role: sql`CASE WHEN ${classes.owner_user_id} = ${userId} THEN 'owner' ELSE 'participant' END`.as(
+          "role"
+        ),
+
+        // ดึงข้อมูล 'created_at' จากตาราง 'user_classes' เพื่อใช้เป็น 'วันที่เข้าร่วม' (joined_at)
         joined_at: user_classes.created_at,
       })
+      // --- ส่วนที่ 3: การเชื่อมตาราง (JOINs) ---
+
+      // เริ่มจากตาราง 'classes' เป็นตารางหลัก
       .from(classes)
-      // Join with users table to get owner information
+
+      // INNER JOIN กับตาราง 'users' เพื่อเอาข้อมูลชื่อของเจ้าของคลาส
+      // เชื่อมโดยใช้ `classes.owner_user_id` กับ `users.user_id`
       .innerJoin(users, eq(classes.owner_user_id, users.user_id))
+
+      // LEFT JOIN กับตาราง 'user_classes' เพื่อตรวจสอบว่าผู้ใช้คนปัจจุบันได้เข้าร่วมคลาสไหนบ้าง
+      // **เหตุผลที่ใช้ LEFT JOIN:** เราต้องการให้คลาสที่ผู้ใช้เป็นเจ้าของแสดงขึ้นมาเสมอ
+      // แม้ว่าผู้ใช้คนนั้น (ในฐานะเจ้าของ) จะไม่มี record อยู่ในตาราง user_classes ก็ตาม
+      // โดยจะเชื่อมเฉพาะ record ที่ class_id ตรงกัน และ user_id คือผู้ใช้คนปัจจุบันเท่านั้น
       .leftJoin(
         user_classes,
         sql`${classes.class_id} = ${user_classes.class_id} AND ${user_classes.user_id} = ${userId}`
       )
-      .where(eq(classes.owner_user_id, userId))
-      .orderBy(user_classes.created_at);
 
-    // Combine both arrays and remove duplicates
-    const allClasses = [...participatedClasses, ...ownedClasses];
-    const uniqueClasses = allClasses.filter(
-      (cls, index, self) =>
-        index === self.findIndex((c) => c.class_id === cls.class_id)
-    );
+      // --- ส่วนที่ 4: เงื่อนไขการคัดกรองข้อมูล (Filtering) ---
 
-    // Sort by joined_at from oldest to newest
-    uniqueClasses.sort((a, b) => {
-      if (!a.joined_at && !b.joined_at) return a.class_id - b.class_id;
-      if (!a.joined_at) return 1;
-      if (!b.joined_at) return -1;
-      return new Date(a.joined_at) - new Date(b.joined_at);
-    });
+      // .where() คือเงื่อนไขหลักในการหาคลาสที่เกี่ยวข้องกับผู้ใช้
+      // ใช้ or() เพื่อระบุว่าเราต้องการคลาสที่เข้าเงื่อนไขข้อใดข้อหนึ่งต่อไปนี้:
+      // 1. คลาสที่ 'owner_user_id' คือ userId ปัจจุบัน (เขาเป็นเจ้าของ)
+      // 2. คลาสที่ 'user_id' ในตาราง 'user_classes' คือ userId ปัจจุบัน (เขาเป็นสมาชิก)
+      .where(
+        or(eq(classes.owner_user_id, userId), eq(user_classes.user_id, userId))
+      )
 
-    // Transform the data to include formatted owner name
-    const classesWithOwnerName = uniqueClasses.map((cls) => ({
-      ...cls,
-      owner_name: `${cls.owner_first_name || ""} ${
-        cls.owner_last_name || ""
-      }`.trim(),
-      owner_full_name: {
-        first_name: cls.owner_first_name,
-        last_name: cls.owner_last_name,
-      },
-    }));
+      // --- ส่วนที่ 5: การจัดเรียงข้อมูล (Sorting) ---
 
-    return res.status(200).json(classesWithOwnerName);
+      // จัดเรียงผลลัพธ์ตามวันที่เข้าร่วม (joined_at) จากเก่าที่สุดไปใหม่ที่สุด
+      // เพื่อให้คลาสที่เข้าร่วมก่อนแสดงขึ้นมาก่อน
+      .orderBy(asc(user_classes.created_at));
+
+    // 5. ส่งข้อมูลที่ได้จาก Database กลับไปให้ Frontend ได้เลย
+    // ไม่จำเป็นต้องมีการ filter, map, หรือ sort ใน JavaScript อีกต่อไป
+    return res.status(200).json(userClasses);
   } catch (error) {
-    console.error("❌ Error getting classes", error);
-    res.status(500).json({ message: "Internal server error" });
+    // กรณีเกิดข้อผิดพลาดที่ไม่คาดคิดในระหว่างการทำงาน
+    console.error("❌ Error getting user classes:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
 
@@ -193,42 +182,49 @@ export async function getClassById(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res
-        .status(401)
-        .json({ message: "Unauthorized - No user ID found in token" });
-    }
+    if (!userId) return res.status(401).json({ message: "Unauthorized" });
 
     const { classId } = req.params;
 
-    const classDetail = await db
-      .select()
+    // --- Query หลักเพื่อดึงข้อมูลคลาสและเจ้าของ ---
+    const classResult = await db
+      .select({
+        // เลือกข้อมูลที่จำเป็นจาก 'classes'
+        ...classes,
+        // สร้าง owner_name ขึ้นมาเลย
+        owner_name:
+          sql`TRIM(CONCAT(${users.first_name}, ' ', ${users.last_name}))`.as(
+            "owner_name"
+          ),
+      })
       .from(classes)
       .innerJoin(users, eq(classes.owner_user_id, users.user_id))
       .where(eq(classes.class_id, classId));
 
-    if (classDetail.length === 0) {
+    if (classResult.length === 0) {
       return res.status(404).json({ error: "Class not found" });
     }
+    const classDetail = classResult[0]; // เราได้ข้อมูลคลาสมาแล้ว
 
-    const classSchedules = await db
-      .select()
-      .from(schedules)
-      .innerJoin(rooms, eq(schedules.room_id, rooms.room_id))
-      .where(eq(schedules.class_id, classId));
+    // ตรวจสอบสิทธิ์การเข้าถึง
+    const memberCheck = await db.query.user_classes.findFirst({
+      where: and(
+        eq(user_classes.class_id, classId),
+        eq(user_classes.user_id, userId)
+      ),
+    });
 
-    const roomIds = classSchedules.map((s) => s.rooms.room_id);
+    const isOwner = classDetail.owner_user_id === userId;
+    const isMember = !!memberCheck;
 
-    const wifiAccessPoints = await db
-      .select()
-      .from(wifi_access_points)
-      .where(inArray(wifi_access_points.room_id, roomIds));
+    if (!isOwner && !isMember) {
+      return res.status(403).json({ message: "Forbidden: Not your class" });
+    }
 
-    const classMembers = await db
-      .select()
-      .from(user_classes)
-      .innerJoin(users, eq(user_classes.user_id, users.user_id))
-      .where(eq(user_classes.class_id, classId));
+    // --- ดึงข้อมูลส่วนที่เหลือ (Schedules, Members, etc.) ---
+    const classSchedules = await db.query.schedules.findMany({
+      where: eq(schedules.class_id, classId),
+    });
 
     const countResult = await db
       .select({ count: sql`count(*)` })
@@ -237,26 +233,15 @@ export async function getClassById(req, res) {
 
     const memberCount = Number(countResult[0]?.count ?? 0);
 
-    const isOwner = classDetail[0].classes.owner_user_id === userId;
-    const isMember = classMembers.some(
-      (m) => m.user_classes.user_id === userId
-    );
-    const currentUserStatus = { isOwner, isMember };
-
-    if (!isOwner && !isMember) {
-      return res.status(403).json({ message: "Forbidden - Not your class" });
-    }
-
+    // --- ประกอบร่าง JSON ที่จะส่งกลับไป ---
     return res.status(200).json({
-      classDetail,
+      classDetail: classDetail, // ส่งข้อมูลคลาสที่ "แบน" แล้วไปเลย
       classSchedules,
-      wifiAccessPoints,
-      classMembers,
       memberCount,
-      currentUserStatus,
+      currentUserStatus: { isOwner, isMember },
     });
   } catch (error) {
-    console.log("Error getting class info", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("Error getting class info by id:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }
