@@ -8,6 +8,7 @@ export const useClassroom = () => {
   const { user } = useUser();
 
   const [classrooms, setClassrooms] = useState([]);
+  const [classInfo, setClassInfo] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -104,38 +105,35 @@ export const useClassroom = () => {
     }
   };
 
-  // const updateUserProfile = useCallback(
-  //   async (updatedData) => {
-  //     setLoading(true);
-  //     try {
-  //       const token = await getToken();
+  const fetchClassesById = async (classId) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = await getToken();
 
-  //       const res = await axios.put(
-  //         `${API_URL}/profile/editProfile`,
-  //         updatedData,
-  //         {
-  //           headers: {
-  //             "Content-Type": "application/json",
-  //             Authorization: `Bearer ${token}`,
-  //           },
-  //         }
-  //       );
+      const res = await axios.get(`${API_URL}/classes/${classId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-  //       setUsers(res.data);
-  //       return res.data;
-  //     } catch (error) {
-  //       console.error(
-  //         "❌ Error updating profile:",
-  //         error.response?.data || error
-  //       );
-  //       Alert.alert("เกิดข้อผิดพลาด", "ไม่สามารถอัปเดตข้อมูลได้");
-  //       throw error;
-  //     } finally {
-  //       setLoading(false);
-  //     }
-  //   },
-  //   [getToken]
-  // );
+      if (res.data && res.data.classDetail) {
+        setClassInfo(res.data);
+      } else {
+        console.warn("Unexpected response", res.data);
+        setClassInfo(null);
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error fetching classes by id",
+        error.response?.data || error.message
+      );
+      setError(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     classrooms,
@@ -144,5 +142,7 @@ export const useClassroom = () => {
     fetchUserClasses,
     createClassroom,
     joinClassroom,
+    classInfo,
+    fetchClassesById,
   };
 };

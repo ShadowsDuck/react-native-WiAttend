@@ -45,7 +45,7 @@ export default function ClassCard({ item }) {
       }}
     >
       <TouchableOpacity
-        onPress={() => router.push(`/classroom/${item.class_id}`)}
+        onPress={() => router.push(`/(class)/${item.class_id}/home`)}
         activeOpacity={0.9}
         style={{ flex: 1 }}
       >

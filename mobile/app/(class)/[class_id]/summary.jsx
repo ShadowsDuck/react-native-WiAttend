@@ -1,11 +1,11 @@
 import { View, Text } from "react-native";
 
-const ClassPage = () => {
+const SummaryPage = () => {
   return (
     <View>
-      <Text>ClassPage</Text>
+      <Text>SummaryPage</Text>
     </View>
   );
 };
 
-export default ClassPage;
+export default SummaryPage;

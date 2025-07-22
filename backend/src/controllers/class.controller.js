@@ -1,8 +1,15 @@
 import { db } from "../config/db.js";
-import { classes, user_classes, users } from "../db/schema.js";
+import {
+  classes,
+  user_classes,
+  users,
+  schedules,
+  rooms,
+  wifi_access_points,
+} from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 
 export async function getUserClasses(req, res) {
   try {
@@ -182,55 +189,74 @@ export async function joinClass(req, res) {
   }
 }
 
-// export async function updateUserProfile(req, res) {
-//   try {
-//     const { userId } = getAuth(req);
+export async function getClassById(req, res) {
+  try {
+    const { userId } = getAuth(req);
 
-//     if (!userId) {
-//       return res.status(401).json({ message: "Unauthorized" });
-//     }
+    if (!userId) {
+      return res
+        .status(401)
+        .json({ message: "Unauthorized - No user ID found in token" });
+    }
 
-//     // ตรวจสอบว่า user มีอยู่ใน db มั้ย
-//     const existingUser = await db.query.users.findFirst({
-//       where: eq(users.user_id, userId),
-//     });
+    const { classId } = req.params;
 
-//     if (!existingUser) {
-//       console.warn(`User not found in DB: ${userId}`);
-//       return res.status(404).json({ message: "User not found" });
-//     }
+    const classDetail = await db
+      .select()
+      .from(classes)
+      .innerJoin(users, eq(classes.owner_user_id, users.user_id))
+      .where(eq(classes.class_id, classId));
 
-//     const { student_id, first_name, last_name, major, year } = req.body;
-//     // เช็กว่าข้อมูลถูกส่งมาครบ
-//     if (!student_id || !first_name || !last_name || !major || !year) {
-//       return res.status(400).json({ message: "Missing required fields" });
-//     }
+    if (classDetail.length === 0) {
+      return res.status(404).json({ error: "Class not found" });
+    }
 
-//     // 🔍 ตรวจว่า student_id นี้มีอยู่ในระบบแล้วหรือยัง (แต่ต้องไม่ใช่ของตัวเอง)
-//     const duplicateStudent = await db.query.users.findFirst({
-//       where: (users, { eq, and, ne }) =>
-//         and(eq(users.student_id, student_id), ne(users.user_id, userId)),
-//     });
+    const classSchedules = await db
+      .select()
+      .from(schedules)
+      .innerJoin(rooms, eq(schedules.room_id, rooms.room_id))
+      .where(eq(schedules.class_id, classId));
 
-//     if (duplicateStudent) {
-//       return res.status(409).json({ message: "Student ID already exists" });
-//     }
+    const roomIds = classSchedules.map((s) => s.rooms.room_id);
 
-//     // อัปเดตข้อมูล
-//     await db
-//       .update(users)
-//       .set({
-//         student_id,
-//         first_name,
-//         last_name,
-//         major,
-//         year,
-//       })
-//       .where(eq(users.user_id, userId));
+    const wifiAccessPoints = await db
+      .select()
+      .from(wifi_access_points)
+      .where(inArray(wifi_access_points.room_id, roomIds));
 
-//     res.status(200).json({ message: "Profile updated successfully" });
-//   } catch (error) {
-//     console.error("Error creating the user", error);
-//     res.status(500).json({ message: "Internal server Error" });
-//   }
-// }
+    const classMembers = await db
+      .select()
+      .from(user_classes)
+      .innerJoin(users, eq(user_classes.user_id, users.user_id))
+      .where(eq(user_classes.class_id, classId));
+
+    const countResult = await db
+      .select({ count: sql`count(*)` })
+      .from(user_classes)
+      .where(eq(user_classes.class_id, classId));
+
+    const memberCount = Number(countResult[0]?.count ?? 0);
+
+    const isOwner = classDetail[0].classes.owner_user_id === userId;
+    const isMember = classMembers.some(
+      (m) => m.user_classes.user_id === userId
+    );
+    const currentUserStatus = { isOwner, isMember };
+
+    if (!isOwner && !isMember) {
+      return res.status(403).json({ message: "Forbidden - Not your class" });
+    }
+
+    return res.status(200).json({
+      classDetail,
+      classSchedules,
+      wifiAccessPoints,
+      classMembers,
+      memberCount,
+      currentUserStatus,
+    });
+  } catch (error) {
+    console.log("Error getting class info", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
