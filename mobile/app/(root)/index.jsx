@@ -13,6 +13,7 @@ import ClassCard from "../../components/ClassCard";
 import Loading from "../../components/Loading";
 import { useClassroom } from "../../hooks/useClassroom";
 import { useRouter } from "expo-router";
+import { StatusBarBackground } from "@/components/StatusBar";
 
 export default function App() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function App() {
 
   useEffect(() => {
     if (isLoaded && user) fetchUserClasses();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLoaded]);
 
   const onRefresh = async () => {
@@ -34,6 +36,8 @@ export default function App() {
 
   return (
     <View className="flex-1 bg-[#121212]">
+      <StatusBarBackground />
+
       {/* HEADER */}
       <View className="flex-row items-center justify-between mb-5 mt-5 px-8">
         <View className="flex-row items-end">

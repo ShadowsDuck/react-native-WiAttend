@@ -1,19 +1,12 @@
-import {
-  View,
-  Text,
-  Image,
-  TouchableOpacity,
-  Alert,
-  ScrollView,
-} from "react-native";
+import { View, Text, Image, Alert, ScrollView } from "react-native";
 import { useUser } from "@clerk/clerk-expo";
 import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import Loading from "../../components/Loading.jsx";
-import BackButton from "../../components/BackButton.jsx";
 import Input from "../../components/Input.jsx";
 import Dropdown from "../../components/Dropdown.jsx";
+import Header from "../../components/Header.jsx";
 
 const EditProfile = () => {
   const { user } = useUser();
@@ -87,14 +80,17 @@ const EditProfile = () => {
 
   return (
     <View className="flex-1 bg-[#121212]">
-      {/* HEADER */}
-      <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
-        <BackButton router={router} />
-        <Text className="text-white font-semibold text-4xl">Edit Profile</Text>
-      </View>
+      <Header
+        title="แก้ไขโปรไฟล์"
+        backgroundColor="#292a2c"
+        statusBarStyle="light"
+        textButton="บันทึก"
+        backgroundColorButton="#0F56B3"
+        onPress={handleSave}
+      />
 
       {/* CONTENT */}
-      <ScrollView className="flex-1 px-5 mt-10">
+      <ScrollView className="flex-1 px-16 mt-10">
         <View className="items-center mb-6 relative">
           {/* Profile Image */}
           <Image
@@ -161,15 +157,6 @@ const EditProfile = () => {
               { label: "ปี 4", value: 4 },
             ]}
           />
-
-          <TouchableOpacity
-            className="bg-[#0F56B3] py-4 mt-5 rounded-xl"
-            onPress={handleSave}
-          >
-            <Text className="text-white text-center font-semibold">
-              บันทึกข้อมูล
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

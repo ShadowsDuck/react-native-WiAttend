@@ -1,10 +1,10 @@
 import { useRouter } from "expo-router";
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
-import BackButton from "../../components/BackButton";
+import { View, Text, ScrollView, Alert } from "react-native";
 import Input from "../../components/Input";
 import { useState } from "react";
 import { useClassroom } from "../../hooks/useClassroom";
 import Loading from "../../components/Loading";
+import Header from "../../components/Header";
 
 const JoinClassroom = () => {
   const router = useRouter();
@@ -53,13 +53,14 @@ const JoinClassroom = () => {
 
   return (
     <View className="flex-1 bg-[#121212]">
-      {/* HEADER */}
-      <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
-        <BackButton router={router} />
-        <Text className="text-white font-semibold text-4xl">
-          เข้าร่วมชั้นเรียน
-        </Text>
-      </View>
+      <Header
+        title="เข้าร่วมชั้นเรียน"
+        backgroundColor="#292a2c"
+        statusBarStyle="light"
+        textButton="เข้าร่วม"
+        backgroundColorButton="#0F56B3"
+        onPress={handleCreate}
+      />
 
       {/* CONTENT */}
       <ScrollView className="flex-1 px-16 mt-12">
@@ -73,15 +74,6 @@ const JoinClassroom = () => {
             value={joinCode}
             onChangeText={setJoinCode}
           />
-
-          <TouchableOpacity
-            className="bg-[#0F56B3] py-4 mt-5 rounded-xl"
-            onPress={handleCreate}
-          >
-            <Text className="text-white text-center font-semibold">
-              เข้าร่วมชั้นเรียน
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

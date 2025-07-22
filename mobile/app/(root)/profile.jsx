@@ -6,8 +6,8 @@ import { useCallback } from "react";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import { useSignOut } from "../../hooks/useSignOut.js";
 import Loading from "../../components/Loading.jsx";
-import BackButton from "../../components/BackButton.jsx";
 import { useFocusEffect } from "@react-navigation/native";
+import Header from "../../components/Header.jsx";
 
 const Profile = () => {
   const { user } = useUser();
@@ -22,24 +22,21 @@ const Profile = () => {
       if (user?.id) {
         fetchUserProfile(user.id);
       }
-    }, [user?.id])
+    }, [user?.id, fetchUserProfile])
   );
 
   if (loading) return <Loading />;
 
   return (
     <View className="flex-1 bg-[#121212]">
-      {/* HEADER */}
-      <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
-        <BackButton router={router} />
-        <Text className="text-white font-semibold text-4xl">Profile</Text>
-        <TouchableOpacity
-          className="bg-[#ff00007a] py-2 px-2 rounded-2xl absolute right-0"
-          onPress={handleSignOut}
-        >
-          <Ionicons name="power" size={24} color="red" />
-        </TouchableOpacity>
-      </View>
+      <Header
+        title="โปรไฟล์"
+        backgroundColor="#292a2c"
+        statusBarStyle="light"
+        textButton="ออกจากระบบ"
+        backgroundColorButton="#ff00007a"
+        onPress={handleSignOut}
+      />
 
       {/* CONTENT */}
       <View className="flex-1 items-center mt-10">

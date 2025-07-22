@@ -1,11 +1,11 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert } from "react-native";
-import BackButton from "../../components/BackButton";
+import { View, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import Input from "../../components/Input";
 import { useState } from "react";
 import DatePicker from "../../components/DatePicker";
 import { useClassroom } from "../../hooks/useClassroom";
 import Loading from "../../components/Loading";
+import Header from "../../components/Header";
 
 const CreateClassroom = () => {
   const router = useRouter();
@@ -45,16 +45,17 @@ const CreateClassroom = () => {
 
   return (
     <View className="flex-1 bg-[#121212]">
-      {/* HEADER */}
-      <View className="flex-row items-center justify-center mt-5 gap-10 mx-8">
-        <BackButton router={router} />
-        <Text className="text-white font-semibold text-4xl">
-          สร้างชั้นเรียน
-        </Text>
-      </View>
+      <Header
+        title="สร้างชั้นเรียน"
+        backgroundColor="#292a2c"
+        statusBarStyle="light"
+        textButton="สร้าง"
+        backgroundColorButton="#0F56B3"
+        onPress={handleCreate}
+      />
 
       {/* CONTENT */}
-      <ScrollView className="flex-1 px-5 mt-10">
+      <ScrollView className="flex-1 px-16 mt-10">
         {/* form */}
         <View className="gap-5 mt-3">
           <Input
@@ -74,15 +75,6 @@ const CreateClassroom = () => {
             value={semesterWeeks}
             onChangeText={setSemesterWeeks}
           />
-
-          <TouchableOpacity
-            className="bg-[#0F56B3] py-4 mt-5 rounded-xl"
-            onPress={handleCreate}
-          >
-            <Text className="text-white text-center font-semibold">
-              สร้างชั้นเรียน
-            </Text>
-          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>
