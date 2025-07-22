@@ -4,63 +4,25 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Animated,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { formatDate } from "../utils/formatDate";
+import FloatingLabel from "../components/FloatingLabel";
 
 const DatePicker = ({ label, value, onChange, error }) => {
   const [showDate, setShowDate] = useState(false);
-
   const [isFocused, setIsFocused] = useState(false);
-  const labelAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (!showDate) {
-      setIsFocused(false);
-    }
+    if (!showDate) setIsFocused(false);
   }, [showDate]);
-
-  // แสดง label ถ้ามีค่า
-  useEffect(() => {
-    Animated.timing(labelAnim, {
-      toValue: isFocused || value ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isFocused, value, labelAnim]);
-
-  // ปรับ label style
-  const labelStyle = {
-    position: "absolute",
-    left: 18,
-    top: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [18.5, -10],
-    }),
-    fontSize: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [16, 12],
-    }),
-    color: error ? "#f87171" : isFocused ? "#6D28D9" : "#aaa",
-    backgroundColor: "#121212",
-    paddingHorizontal: 4,
-  };
 
   const getBorderColor = () => {
     if (error) return "#f87171";
-    if (isFocused) return "#6D28D9";
+    if (isFocused) return "#a8c6fc";
     return "rgba(255,255,255,0.2)";
   };
-
-  // const formatDate = (date) => {
-  //   const d = new Date(date);
-  //   const day = d.getDate().toString().padStart(2, "0");
-  //   const month = (d.getMonth() + 1).toString().padStart(2, "0");
-  //   const year = d.getFullYear();
-  //   return `${day}-${month}-${year}`;
-  // };
 
   return (
     <View style={{ marginBottom: 10 }}>
@@ -77,15 +39,14 @@ const DatePicker = ({ label, value, onChange, error }) => {
           }}
         />
       )}
-      <View
-        style={[
-          styles.container,
-          {
-            borderColor: getBorderColor(),
-          },
-        ]}
-      >
-        <Animated.Text style={labelStyle}>{label}</Animated.Text>
+      <View style={[styles.container, { borderColor: getBorderColor() }]}>
+        <FloatingLabel
+          label={label}
+          value={value}
+          isFocused={isFocused}
+          error={error}
+          activeColor="#a8c6fc"
+        />
         <TouchableOpacity
           style={{ flex: 1 }}
           onPress={() => {

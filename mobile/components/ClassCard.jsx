@@ -2,7 +2,7 @@ import { Image, Text, TouchableOpacity, View } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { cardDesigns } from "../constants/cardDesigns";
-import { formatJoinDate } from "../utils/formatJoinDate";
+// import { formatJoinDate } from "../utils/formatJoinDate";
 import { useUser } from "@clerk/clerk-expo";
 import { iconMap } from "../constants/iconMap";
 

@@ -4,55 +4,21 @@ import {
   TouchableOpacity,
   TextInput,
   StyleSheet,
-  Animated,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
+import FloatingLabel from "./FloatingLabel";
 
 const TimePicker = ({ label, error }) => {
   const [showTime, setShowTime] = useState(false);
   const [formData, setFormData] = useState({
     time: "",
   });
-
   const [isFocused, setIsFocused] = useState(false);
-  const labelAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    if (!showTime) {
-      setIsFocused(false);
-    }
-  }, [showTime]);
-
-  // แสดง label ถ้ามีค่า
-  useEffect(() => {
-    Animated.timing(labelAnim, {
-      toValue: isFocused || formData.time ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [isFocused, formData.time, labelAnim]);
-
-  // ปรับ label style
-  const labelStyle = {
-    position: "absolute",
-    left: 18,
-    top: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [18, -10],
-    }),
-    fontSize: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [16, 12],
-    }),
-    color: error ? "#f87171" : isFocused ? "#6D28D9" : "#aaa",
-    backgroundColor: "#121212",
-    paddingHorizontal: 4,
-  };
 
   const getBorderColor = () => {
     if (error) return "#f87171";
-    if (isFocused) return "#6D28D9";
+    if (isFocused) return "#a8c6fc";
     return "rgba(255,255,255,0.2)";
   };
 
@@ -72,6 +38,7 @@ const TimePicker = ({ label, error }) => {
           }}
         />
       )}
+
       <View
         style={[
           styles.container,
@@ -80,7 +47,14 @@ const TimePicker = ({ label, error }) => {
           },
         ]}
       >
-        <Animated.Text style={labelStyle}>{label}</Animated.Text>
+        <FloatingLabel
+          label={label}
+          isFocused={isFocused}
+          value={formData.time}
+          error={error}
+          activeColor="#a8c6fc"
+        />
+
         <TouchableOpacity
           style={{ flex: 1 }}
           onPress={() => {
@@ -97,7 +71,7 @@ const TimePicker = ({ label, error }) => {
                 ? new Date(formData.time).toLocaleTimeString("th-TH", {
                     hour: "2-digit",
                     minute: "2-digit",
-                    hour12: false, // <-- บอกว่าไม่ใช้ AM/PM
+                    hour12: false,
                   })
                 : ""
             }
@@ -106,6 +80,7 @@ const TimePicker = ({ label, error }) => {
           />
         </TouchableOpacity>
       </View>
+
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );

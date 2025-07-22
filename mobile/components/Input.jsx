@@ -1,5 +1,6 @@
-import { Animated, TextInput, View, Text } from "react-native";
-import { useEffect, useRef, useState } from "react";
+import { TextInput, View, Text } from "react-native";
+import { useState } from "react";
+import FloatingLabel from "../components/FloatingLabel";
 
 const Input = ({
   label,
@@ -13,31 +14,6 @@ const Input = ({
   ...rest
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const labelAnim = useRef(new Animated.Value(value ? 1 : 0)).current;
-
-  useEffect(() => {
-    Animated.timing(labelAnim, {
-      toValue: isFocused || value ? 1 : 0,
-      duration: 200,
-      useNativeDriver: false,
-    }).start();
-  }, [labelAnim, isFocused, value]);
-
-  const labelStyle = {
-    position: "absolute",
-    left: 18,
-    top: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [18, -10],
-    }),
-    fontSize: labelAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: [16, 12],
-    }),
-    color: error ? "#f87171" : isFocused ? "#a8c6fc" : "#aaa",
-    backgroundColor: "#121212",
-    paddingHorizontal: 4,
-  };
 
   const getBorderColor = () => {
     if (error) return "border-red-500";
@@ -51,7 +27,13 @@ const Input = ({
         className={`border rounded-xl px-4 pt-5 pb-2 ${getBorderColor()} bg-[#121212]`}
         style={{ minHeight: 64 }}
       >
-        <Animated.Text style={labelStyle}>{label}</Animated.Text>
+        <FloatingLabel
+          label={label}
+          value={value}
+          isFocused={isFocused}
+          error={error}
+          activeColor="#a8c6fc"
+        />
         <View className="flex-row items-center gap-3">
           <TextInput
             className="flex-1 text-white text-base pt-1 ml-1"
