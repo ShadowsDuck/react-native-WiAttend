@@ -28,7 +28,7 @@ const HomePage = () => {
     if (joinCode) {
       await Clipboard.setStringAsync(joinCode);
       setIsCopied(true);
-      setTimeout(() => setIsCopied(false), 2000);
+      setTimeout(() => setIsCopied(false), 1000);
     }
   };
 
@@ -71,6 +71,7 @@ const HomePage = () => {
   const classData = classInfo.classDetail;
   const schedulesData = classInfo.classSchedules;
   const memberCountData = classInfo.memberCount;
+  const currentUserStatus = classInfo.currentUserStatus;
 
   return (
     <View className="flex-1 bg-[#121212]">
@@ -82,9 +83,17 @@ const HomePage = () => {
         </View>
 
         <View className="bg-[#1E1E1E] rounded-2xl p-5 mb-6 mx-5">
-          <Text className="text-white text-xl font-bold mb-5">
-            รายละเอียดคลาส
-          </Text>
+          <View className="flex-row justify-between items-center mb-5">
+            <Text className="text-white text-xl font-bold">รายละเอียดคลาส</Text>
+
+            {currentUserStatus?.isOwner && (
+              <TouchableOpacity className="bg-blue-500 px-3 py-1.5 rounded-lg">
+                <Text className="text-white font-semibold text-sm">
+                  จัดการคลาส
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
 
           {/* สร้างโดย */}
           <View className="flex-row items-center mb-5">
@@ -113,7 +122,7 @@ const HomePage = () => {
           </View>
 
           {/* จำนวนสมาชิก */}
-          <View className="flex-row items-center mb-5">
+          <View className="flex-row items-center">
             <View className="w-11 h-11 rounded-full bg-white/5 justify-center items-center mr-4">
               <User size="22" color="#34D399" />
             </View>
@@ -125,31 +134,38 @@ const HomePage = () => {
             </View>
           </View>
 
-          {/* รหัสเข้าร่วม */}
-          <View className="flex-row items-center">
-            <View className="w-11 h-11 rounded-full bg-white/5 justify-center items-center mr-4">
-              <Key size="22" color="#FBBF24" />
-            </View>
-            <View className="flex-1">
-              <Text className="text-[#A0A0A0] text-sm mb-1.5">
-                รหัสเข้าร่วม (แตะเพื่อคัดลอก)
-              </Text>
-              <TouchableOpacity onPress={copyToClipboard} activeOpacity={0.7}>
-                {isCopied ? (
-                  <View className="flex-row items-center justify-center font-mono py-2.5 px-3 rounded-lg bg-[#1C3A2E] border border-[#34D399]">
-                    <CopySuccess size="18" color="#34D399" variant="Bold" />
-                    <Text className="text-[#34D399] text-lg font-bold ml-2">
-                      คัดลอกแล้ว!
-                    </Text>
-                  </View>
-                ) : (
-                  <Text className="text-[#FBBF24] bg-[#2E2E2E] text-lg font-bold font-mono py-2.5 px-3 rounded-lg text-center">
-                    {classData.join_code || "N/A"}
+          {currentUserStatus?.isOwner && (
+            <>
+              {/* รหัสเข้าร่วม */}
+              <View className="flex-row items-center mt-5">
+                <View className="w-11 h-11 rounded-full bg-white/5 justify-center items-center mr-4">
+                  <Key size="22" color="#FBBF24" />
+                </View>
+                <View className="flex-1">
+                  <Text className="text-[#A0A0A0] text-sm mb-1.5">
+                    รหัสเข้าร่วม (แตะเพื่อคัดลอก)
                   </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
+                  <TouchableOpacity
+                    onPress={copyToClipboard}
+                    activeOpacity={0.7}
+                  >
+                    {isCopied ? (
+                      <View className="flex-row items-center justify-center font-mono py-2.5 px-3 rounded-lg bg-[#1C3A2E] border border-[#34D399]">
+                        <CopySuccess size="18" color="#34D399" variant="Bold" />
+                        <Text className="text-[#34D399] text-lg font-bold ml-2">
+                          คัดลอกแล้ว!
+                        </Text>
+                      </View>
+                    ) : (
+                      <Text className="text-[#FBBF24] bg-[#2E2E2E] border border-[#2E2E2E] text-lg font-bold font-mono py-2.5 px-3 rounded-lg text-center">
+                        {classData.join_code || "N/A"}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
         </View>
 
         {/* ตารางเรียน */}
