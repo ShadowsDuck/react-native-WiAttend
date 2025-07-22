@@ -34,6 +34,7 @@ const Profile = () => {
         backgroundColor="#292a2c"
         statusBarStyle="light"
         textButton="ออกจากระบบ"
+        textColor="#fff"
         backgroundColorButton="#ff00007a"
         onPress={handleSignOut}
       />

@@ -34,14 +34,14 @@ const Input = ({
       inputRange: [0, 1],
       outputRange: [16, 12],
     }),
-    color: error ? "#f87171" : isFocused ? "#6D28D9" : "#aaa",
+    color: error ? "#f87171" : isFocused ? "#a8c6fc" : "#aaa",
     backgroundColor: "#121212",
     paddingHorizontal: 4,
   };
 
   const getBorderColor = () => {
     if (error) return "border-red-500";
-    if (isFocused) return "border-[#6D28D9]";
+    if (isFocused) return "border-[#a8c6fc]";
     return "border-white/20";
   };
 

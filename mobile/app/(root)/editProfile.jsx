@@ -85,7 +85,8 @@ const EditProfile = () => {
         backgroundColor="#292a2c"
         statusBarStyle="light"
         textButton="บันทึก"
-        backgroundColorButton="#0F56B3"
+        textColor="#1f3d74"
+        backgroundColorButton="#a8c6fc"
         onPress={handleSave}
       />
 

@@ -10,6 +10,7 @@ const Header = ({
   backgroundColor = "#121212",
   statusBarStyle = "light",
   textButton,
+  textColor,
   backgroundColorButton,
   onPress,
 }) => {
@@ -41,7 +42,9 @@ const Header = ({
               style={{ backgroundColor: backgroundColorButton }}
               onPress={onPress}
             >
-              <Text className="text-white font-medium">{textButton}</Text>
+              <Text className="font-medium" style={{ color: textColor }}>
+                {textButton}
+              </Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={() => alert("ใส่ไว้สวยๆ")}>

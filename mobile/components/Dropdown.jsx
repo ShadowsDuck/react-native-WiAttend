@@ -33,7 +33,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
       inputRange: [0, 1],
       outputRange: [16, 12],
     }),
-    color: error ? "#f87171" : isFocused ? "#6D28D9" : "#aaa",
+    color: error ? "#f87171" : isFocused ? "#a8c6fc" : "#aaa",
     backgroundColor: "#121212",
     paddingHorizontal: 4,
     zIndex: 10,
@@ -66,7 +66,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
               borderColor: error
                 ? "#f87171"
                 : isFocused
-                ? "#6D28D9"
+                ? "#a8c6fc"
                 : "rgba(255,255,255,0.20)",
             },
           ]}
