@@ -46,9 +46,9 @@ const ClassTabsLayout = () => {
           return <Ionicons name={iconName} size={size} color={color} />;
         },
         tabBarActiveTintColor: "#FFFFFF",
-        tabBarInactiveTintColor: "#8E8E93",
+        tabBarInactiveTintColor: "#AEAEAE",
         tabBarStyle: {
-          backgroundColor: "#292a2c",
+          backgroundColor: "#252525",
           borderTopWidth: 0,
           borderTopColor: "transparent",
           height: 80,

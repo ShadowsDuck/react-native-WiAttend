@@ -31,7 +31,7 @@ const Profile = () => {
     <View className="flex-1 bg-[#121212]">
       <Header
         title="โปรไฟล์"
-        backgroundColor="#292a2c"
+        backgroundColor="#252525"
         statusBarStyle="light"
         textButton="ออกจากระบบ"
         textColor="#fff"
@@ -111,7 +111,7 @@ const Profile = () => {
             .map((item, index) => (
               <View
                 key={index}
-                className="bg-white/10 rounded-xl px-5 py-4 flex-row items-center gap-4"
+                className="bg-[#252525] rounded-xl px-5 py-4 flex-row items-center gap-4"
               >
                 <Ionicons name={item.icon} size={30} color="#fff" />
                 <View>

@@ -1,5 +1,5 @@
 import axios from "axios";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/clerk-expo";
 import { API_URL } from "../constants/api.js";
 
@@ -105,7 +105,7 @@ export const useClassroom = () => {
     }
   };
 
-  const fetchClassesById = async (classId) => {
+  const fetchClassesById = useCallback(async (classId) => {
     setLoading(true);
     setError(null);
     try {
@@ -133,7 +133,7 @@ export const useClassroom = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return {
     classrooms,

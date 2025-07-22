@@ -82,7 +82,7 @@ const EditProfile = () => {
     <View className="flex-1 bg-[#121212]">
       <Header
         title="แก้ไขโปรไฟล์"
-        backgroundColor="#292a2c"
+        backgroundColor="#252525"
         statusBarStyle="light"
         textButton="บันทึก"
         textColor="#1f3d74"

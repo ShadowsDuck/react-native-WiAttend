@@ -55,7 +55,7 @@ const JoinClassroom = () => {
     <View className="flex-1 bg-[#121212]">
       <Header
         title="เข้าร่วมชั้นเรียน"
-        backgroundColor="#292a2c"
+        backgroundColor="#252525"
         statusBarStyle="light"
         textButton="เข้าร่วม"
         textColor="#1f3d74"

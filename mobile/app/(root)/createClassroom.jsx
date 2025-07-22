@@ -47,7 +47,7 @@ const CreateClassroom = () => {
     <View className="flex-1 bg-[#121212]">
       <Header
         title="สร้างชั้นเรียน"
-        backgroundColor="#292a2c"
+        backgroundColor="#252525"
         statusBarStyle="light"
         textButton="สร้าง"
         textColor="#1f3d74"

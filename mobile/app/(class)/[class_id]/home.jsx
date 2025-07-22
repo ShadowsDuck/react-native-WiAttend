@@ -37,7 +37,7 @@ const HomePage = () => {
       if (class_id) {
         fetchClassesById(class_id);
       }
-    }, [class_id])
+    }, [class_id, fetchClassesById])
   );
 
   const dayOfWeekThai = {
@@ -58,7 +58,7 @@ const HomePage = () => {
   if (!classInfo || !classInfo.classDetail) {
     return (
       <View className="flex-1 bg-[#121212]">
-        <Header backgroundColor="#1A1A1A" />
+        <Header backgroundColor="#252525" />
         <View className="flex-1 justify-center items-center">
           <Text className="text-red-500 text-lg">ไม่พบข้อมูลคลาส</Text>
         </View>
@@ -74,7 +74,7 @@ const HomePage = () => {
 
   return (
     <View className="flex-1 bg-[#121212]">
-      <Header backgroundColor="#1A1A1A" />
+      <Header backgroundColor="#252525" />
       <ScrollView contentContainerClassName="py-6 pb-10">
         <View className="mb-6">
           {/* ส่ง object classData ทั้งหมดที่มี owner_name สำเร็จรูปเข้าไป */}
