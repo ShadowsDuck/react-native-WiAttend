@@ -21,8 +21,7 @@
       },
       "edgeToEdgeEnabled": true,
       "permissions": ["android.permission.ACCESS_FINE_LOCATION"],
-      "package": "com.shadowsduck.mobile",
-      "usesCleartextTraffic": true
+      "package": "com.shadowsduck.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -30,6 +29,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "./plugins/withCustomAndroidNetwork.js",
       "expo-router",
       [
         "expo-splash-screen",
