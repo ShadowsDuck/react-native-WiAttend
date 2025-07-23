@@ -29,7 +29,6 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
-      "./plugins/withCustomAndroidNetwork.js",
       "expo-router",
       [
         "expo-splash-screen",
@@ -39,8 +38,7 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ],
-      "react-native-wifi-reborn"
+      ]
     ],
     "experiments": {
       "typedRoutes": true
