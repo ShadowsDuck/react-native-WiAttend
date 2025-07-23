@@ -2,7 +2,7 @@ import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
 
 const TARGET_TIME_ZONE = "Asia/Bangkok";
 
-export function processSessionStatuses(sessions) {
+export function processSessionStatuses(sessions, checkedInSessionIds) {
   if (!sessions || sessions.length === 0) {
     return [];
   }
@@ -38,15 +38,13 @@ export function processSessionStatuses(sessions) {
       status = "finished";
     }
 
+    // ตรวจสอบว่า session_id นี้อยู่ใน Set ของหลักฐานการเช็คชื่อหรือไม่
+    const hasCheckedIn = checkedInSessionIds.has(session.session_id);
+
     return {
       ...session,
       status: status,
+      has_checked_in: hasCheckedIn,
     };
   });
-}
-
-export function findActiveSession(processedSessions) {
-  return (
-    processedSessions.find((session) => session.status === "active") || null
-  );
 }

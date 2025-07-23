@@ -37,7 +37,7 @@ export async function createUserProfile(req, res) {
     });
 
     if (exists) {
-      return res.status(200).json({ message: "User already exists" });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const user = await db.insert(users).values({ user_id: userId }).returning();

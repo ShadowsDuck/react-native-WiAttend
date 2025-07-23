@@ -7,11 +7,12 @@ import {
   rooms,
   wifi_access_points,
   class_sessions,
+  attendances,
 } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, sql, or, asc, and } from "drizzle-orm";
-import { processSessionStatuses, findActiveSession } from "../utils/session.js";
+import { eq, sql, or, asc, and, inArray } from "drizzle-orm";
+import { processSessionStatuses } from "../utils/session.js";
 
 export async function getUserClasses(req, res) {
   try {
@@ -276,15 +277,34 @@ export async function getClassById(req, res) {
 
     const memberCount = Number(countResult[0]?.count ?? 0);
 
-    const processedTodaySessions = processSessionStatuses(allTodaySessions);
-    const activeTodaySession = findActiveSession(processedTodaySessions);
+    // Query 4: หา attendances
+    const todaySessionIds = allTodaySessions.map(
+      (session) => session.session_id
+    );
+    let userAttendancesForToday = [];
+    if (todaySessionIds.length > 0) {
+      userAttendancesForToday = await db.query.attendances.findMany({
+        where: and(
+          eq(attendances.user_id, userId),
+          inArray(attendances.session_id, todaySessionIds)
+        ),
+        columns: { session_id: true },
+      });
+    }
+    const checkedInSessionIds = new Set(
+      userAttendancesForToday.map((att) => att.session_id)
+    );
+
+    const processedTodaySessions = processSessionStatuses(
+      allTodaySessions,
+      checkedInSessionIds
+    );
 
     // --- ประกอบร่าง JSON ที่จะส่งกลับไป ---
     return res.status(200).json({
       classDetail: classDetail, // ส่งข้อมูลคลาสที่ "แบน" แล้วไปเลย
       classSchedules,
       memberCount,
-      today_session: activeTodaySession,
       all_today_sessions: processedTodaySessions,
       currentUserStatus: { isOwner, isMember },
     });

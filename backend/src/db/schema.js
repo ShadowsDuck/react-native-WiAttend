@@ -30,10 +30,10 @@ export const dayEnum = pgEnum("day_enum", [
   "saturday",
 ]);
 
-export const attendanceStatusEnum = pgEnum("attendance_status", [
-  "present",
-  "absent",
-]);
+// export const attendanceStatusEnum = pgEnum("attendance_status", [
+//   "present",
+//   "absent",
+// ]);
 
 // -------------------- USERS --------------------
 // ตารางข้อมูลผู้ใช้
@@ -57,7 +57,7 @@ export const classes = pgTable("classes", {
   subject_name: text("subject_name").notNull(),
   semester_start_date: date("semester_start_date").notNull(),
   semester_weeks: integer("semester_weeks").notNull(),
-  description: text("description"),
+  // description: text("description"),
   join_code: varchar("join_code", { length: 10 }).notNull().unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
@@ -148,8 +148,8 @@ export const attendances = pgTable(
       .notNull()
       .references(() => class_sessions.session_id, { onDelete: "cascade" }),
     checked_in_at: timestamp("checked_in_at").notNull(),
-    wifi_rssi: integer("wifi_rssi").notNull(),
-    status: attendanceStatusEnum("status").notNull(),
+    // wifi_rssi: integer("wifi_rssi").notNull(),
+    // status: attendanceStatusEnum("status").notNull(),
     created_at: timestamp("created_at").defaultNow().notNull(),
   },
   (table) => [

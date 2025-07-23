@@ -1,6 +1,6 @@
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Book1,
   User,
@@ -16,12 +16,14 @@ import Header from "../../../components/Header";
 import ClassCard from "../../../components/ClassCard";
 import Loading from "../../../components/Loading";
 import { useClassroom } from "../../../hooks/useClassroom";
+import { useSessions } from "../../../hooks/useSessions";
 import { DAY_OF_WEEK_THAI } from "../../../constants/dayOfWeekThai";
 import CheckInButton from "../../../components/CheckInButton";
 
 const HomePage = () => {
   const { class_id } = useLocalSearchParams();
   const { classInfo, loading, fetchClassesById } = useClassroom();
+  const { checkin } = useSessions();
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = async () => {
@@ -60,9 +62,20 @@ const HomePage = () => {
   const classData = classInfo.classDetail;
   const schedulesData = classInfo.classSchedules;
   const memberCountData = classInfo.memberCount;
-  const activeTodaySessionData = classInfo.today_session;
   const currentUserStatus = classInfo.currentUserStatus;
   const allTodaySessionsData = classInfo.all_today_sessions || [];
+
+  const handleCheckInPress = async (sessionId) => {
+    try {
+      const result = await checkin(sessionId);
+      Alert.alert("สำเร็จ!", result.message || "เช็คชื่อเรียบร้อยแล้ว");
+      // สำคัญ: ดึงข้อมูลใหม่เพื่ออัปเดต UI
+      fetchClassesById(class_id);
+    } catch (error) {
+      const errorMessage = error.response?.data?.message || "เกิดข้อผิดพลาด";
+      Alert.alert("เช็คชื่อไม่สำเร็จ", errorMessage);
+    }
+  };
 
   return (
     <View className="flex-1 bg-[#121212]">
@@ -175,6 +188,9 @@ const HomePage = () => {
               // 2. ดึงสถานะออกมา (ถ้าไม่มี session ของวันนี้เลย status จะเป็น undefined)
               const status = todaySessionForThisSchedule?.status;
 
+              const has_checked_in =
+                todaySessionForThisSchedule?.has_checked_in;
+
               return (
                 <View key={index} className="bg-[#2C2C2C] rounded-xl p-4 mb-3">
                   <Text className="text-white text-lg font-bold mb-3">
@@ -195,19 +211,33 @@ const HomePage = () => {
                     </Text>
                   </View>
 
-                  {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 3 สถานะ --- */}
+                  {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 4 สถานะ --- */}
+                  {/* เงื่อนไขที่ 0: เช็คชื่อสำเร็จแล้ว -> แสดงปุ่มสีน้ำเงิน */}
+                  {has_checked_in && (
+                    <TouchableOpacity
+                      disabled={true}
+                      className="rounded-lg py-2.5 mt-4 bg-blue-600"
+                    >
+                      <Text className="text-white text-center font-semibold text-base">
+                        เช็คชื่อสำเร็จ
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
                   {/* เงื่อนไขที่ 1: สถานะเป็น 'active' -> แสดงปุ่มสีเขียวนับถอยหลัง */}
-                  {status === "active" && (
+                  {status === "active" && !has_checked_in && (
                     <CheckInButton
                       session={todaySessionForThisSchedule}
-                      onPress={() => {
-                        /* TODO: ... */
-                      }}
+                      onPress={() =>
+                        handleCheckInPress(
+                          todaySessionForThisSchedule.session_id
+                        )
+                      }
                     />
                   )}
 
                   {/* เงื่อนไขที่ 2: สถานะเป็น 'expired' -> แสดงปุ่มสีแดง */}
-                  {status === "expired" && (
+                  {status === "expired" && !has_checked_in && (
                     <TouchableOpacity
                       disabled={true}
                       className="rounded-lg py-2.5 mt-4 bg-red-600"
@@ -219,16 +249,18 @@ const HomePage = () => {
                   )}
 
                   {/* เงื่อนไขที่ 3: ไม่มีสถานะ (คือเป็นวันอื่น) หรือสถานะเป็นอย่างอื่น (upcoming, finished) -> แสดงปุ่มสีเทา */}
-                  {status !== "active" && status !== "expired" && (
-                    <TouchableOpacity
-                      disabled={true}
-                      className="rounded-lg py-2.5 mt-4 bg-gray-600"
-                    >
-                      <Text className="text-white text-center font-semibold text-base">
-                        เช็คชื่อ
-                      </Text>
-                    </TouchableOpacity>
-                  )}
+                  {status !== "active" &&
+                    status !== "expired" &&
+                    !has_checked_in && (
+                      <TouchableOpacity
+                        disabled={true}
+                        className="rounded-lg py-2.5 mt-4 bg-gray-600"
+                      >
+                        <Text className="text-white text-center font-semibold text-base">
+                          เช็คชื่อ
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                 </View>
               );
             })}

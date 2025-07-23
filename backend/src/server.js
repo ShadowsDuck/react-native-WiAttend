@@ -1,10 +1,9 @@
 import express from "express";
 // import job from "./config/cron.js";
 import { clerkMiddleware } from "@clerk/express";
-import { db } from "../src/config/db.js";
-import { users } from "../src/db/schema.js";
 import userRoutes from "./routes/user.route.js";
 import classRoutes from "./routes/class.route.js";
+import sessionsRoutes from "./routes/sessions.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +20,7 @@ app.use("/api/health", (req, res) => {
 
 app.use("/api/users", userRoutes);
 app.use("/api/classes", classRoutes);
+app.use("/api/sessions", sessionsRoutes);
 
 // error handling middleware
 app.use((err, req, res, next) => {
