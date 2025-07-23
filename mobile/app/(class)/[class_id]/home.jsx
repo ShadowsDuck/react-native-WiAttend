@@ -1,6 +1,6 @@
 import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useFocusEffect, useLocalSearchParams } from "expo-router";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Book1,
   User,
@@ -16,6 +16,8 @@ import Header from "../../../components/Header";
 import ClassCard from "../../../components/ClassCard";
 import Loading from "../../../components/Loading";
 import { useClassroom } from "../../../hooks/useClassroom";
+import { DAY_OF_WEEK_THAI } from "../../../constants/dayOfWeekThai";
+import CheckInButton from "../../../components/CheckInButton";
 
 const HomePage = () => {
   const { class_id } = useLocalSearchParams();
@@ -40,20 +42,7 @@ const HomePage = () => {
     }, [class_id, fetchClassesById])
   );
 
-  const dayOfWeekThai = {
-    monday: "จันทร์",
-    tuesday: "อังคาร",
-    wednesday: "พุธ",
-    thursday: "พฤหัสบดี",
-    friday: "ศุกร์",
-    saturday: "เสาร์",
-    sunday: "อาทิตย์",
-  };
-
-  // --- Guard Clauses: จัดการสถานะ Loading และ Error ก่อน ---
-  if (loading) {
-    return <Loading />;
-  }
+  if (loading) return <Loading />;
 
   if (!classInfo || !classInfo.classDetail) {
     return (
@@ -71,7 +60,9 @@ const HomePage = () => {
   const classData = classInfo.classDetail;
   const schedulesData = classInfo.classSchedules;
   const memberCountData = classInfo.memberCount;
+  const activeTodaySessionData = classInfo.today_session;
   const currentUserStatus = classInfo.currentUserStatus;
+  const allTodaySessionsData = classInfo.all_today_sessions || [];
 
   return (
     <View className="flex-1 bg-[#121212]">
@@ -169,33 +160,99 @@ const HomePage = () => {
         </View>
 
         {/* ตารางเรียน */}
-        {schedulesData?.length > 0 && (
+        {schedulesData?.length > 0 ? (
           <View className="bg-[#1E1E1E] rounded-2xl p-5 mx-5">
             <View className="flex-row items-center gap-2 mb-4">
               <Calendar size={20} color="#A78BFA" style={{ marginTop: 2 }} />
               <Text className="text-white text-xl font-bold">ตารางเรียน</Text>
             </View>
-            {schedulesData.map((schedule, index) => (
-              <View key={index} className="bg-[#2C2C2C] rounded-xl p-4 mb-3">
-                <Text className="text-white text-lg font-bold mb-3">
-                  วัน
-                  {dayOfWeekThai[schedule.day_of_week.toLowerCase()] ||
-                    schedule.day_of_week}
-                </Text>
-                <View className="flex-row items-center mt-2">
-                  <Clock size="16" color="#9CA3AF" />
-                  <Text className="text-gray-300 text-sm ml-2">
-                    {schedule.start_time} - {schedule.end_time}
+            {schedulesData.map((schedule, index) => {
+              // 1. หาข้อมูล session ของวันนี้ที่ตรงกับ schedule ใบนี้
+              const todaySessionForThisSchedule = allTodaySessionsData.find(
+                (session) => session.schedule_id === schedule.schedule_id
+              );
+
+              // 2. ดึงสถานะออกมา (ถ้าไม่มี session ของวันนี้เลย status จะเป็น undefined)
+              const status = todaySessionForThisSchedule?.status;
+
+              return (
+                <View key={index} className="bg-[#2C2C2C] rounded-xl p-4 mb-3">
+                  <Text className="text-white text-lg font-bold mb-3">
+                    วัน
+                    {DAY_OF_WEEK_THAI[schedule.day_of_week.toLowerCase()] ||
+                      schedule.day_of_week}
                   </Text>
+                  <View className="flex-row items-center mt-2">
+                    <Clock size="16" color="#9CA3AF" />
+                    <Text className="text-gray-300 text-sm ml-2">
+                      {schedule.start_time} - {schedule.end_time}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-center mt-2">
+                    <Location size="16" color="#9CA3AF" />
+                    <Text className="text-gray-300 text-sm ml-2">
+                      ห้อง: {schedule.room_id}
+                    </Text>
+                  </View>
+
+                  {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 3 สถานะ --- */}
+                  {/* เงื่อนไขที่ 1: สถานะเป็น 'active' -> แสดงปุ่มสีเขียวนับถอยหลัง */}
+                  {status === "active" && (
+                    <CheckInButton
+                      session={todaySessionForThisSchedule}
+                      onPress={() => {
+                        /* TODO: ... */
+                      }}
+                    />
+                  )}
+
+                  {/* เงื่อนไขที่ 2: สถานะเป็น 'expired' -> แสดงปุ่มสีแดง */}
+                  {status === "expired" && (
+                    <TouchableOpacity
+                      disabled={true}
+                      className="rounded-lg py-2.5 mt-4 bg-red-600"
+                    >
+                      <Text className="text-white text-center font-semibold text-base">
+                        หมดเวลาเช็คชื่อ
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {/* เงื่อนไขที่ 3: ไม่มีสถานะ (คือเป็นวันอื่น) หรือสถานะเป็นอย่างอื่น (upcoming, finished) -> แสดงปุ่มสีเทา */}
+                  {status !== "active" && status !== "expired" && (
+                    <TouchableOpacity
+                      disabled={true}
+                      className="rounded-lg py-2.5 mt-4 bg-gray-600"
+                    >
+                      <Text className="text-white text-center font-semibold text-base">
+                        เช็คชื่อ
+                      </Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
-                <View className="flex-row items-center mt-2">
-                  <Location size="16" color="#9CA3AF" />
-                  <Text className="text-gray-300 text-sm ml-2">
-                    ห้อง: {schedule.room_id}
-                  </Text>
-                </View>
+              );
+            })}
+          </View>
+        ) : (
+          <View className="bg-[#1E1E1E] rounded-2xl p-5 mx-5">
+            <View className="flex-row justify-between mb-4">
+              <View className="flex-row gap-2">
+                <Calendar size={20} color="#A78BFA" style={{ marginTop: 2 }} />
+                <Text className="text-white text-xl font-bold">ตารางเรียน</Text>
               </View>
-            ))}
+
+              {currentUserStatus?.isOwner && (
+                <TouchableOpacity className="bg-blue-500 px-3 py-1.5 rounded-lg">
+                  <Text className="text-white font-semibold text-sm">
+                    เพิ่มตารางเรียน
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
+            <View className="flex items-center justify-center p-10">
+              <Text className="text-gray-400">ไม่มีตารางเรียน</Text>
+            </View>
           </View>
         )}
       </ScrollView>

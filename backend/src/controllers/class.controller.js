@@ -6,10 +6,12 @@ import {
   schedules,
   rooms,
   wifi_access_points,
+  class_sessions,
 } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
 import { eq, sql, or, asc, and } from "drizzle-orm";
+import { processSessionStatuses, findActiveSession } from "../utils/session.js";
 
 export async function getUserClasses(req, res) {
   try {
@@ -222,22 +224,68 @@ export async function getClassById(req, res) {
     }
 
     // --- ดึงข้อมูลส่วนที่เหลือ (Schedules, Members, etc.) ---
-    const classSchedules = await db.query.schedules.findMany({
+
+    // Query 1: ดึงตารางเรียนทั้งหมด
+    const schedulesQuery = await db.query.schedules.findMany({
       where: eq(schedules.class_id, classId),
+      orderBy: [asc(schedules.day_of_week), asc(schedules.start_time)],
     });
 
-    const countResult = await db
+    // Query 2: นับจำนวนสมาชิก
+    const memberCountQuery = db
       .select({ count: sql`count(*)` })
       .from(user_classes)
       .where(eq(user_classes.class_id, classId));
 
+    // Query 3: หาทุก Sessions ของวันนี้
+    // const today = new Date().toISOString().split("T")[0]; // ได้ YYYY-MM-DD
+    const allTodaySessionsQuery = db
+      .select({
+        // เลือกข้อมูลที่จำเป็นจากทั้งสองตาราง
+        session_id: class_sessions.session_id,
+        schedule_id: class_sessions.schedule_id,
+        session_date: class_sessions.session_date,
+        start_time: schedules.start_time,
+        end_time: schedules.end_time,
+        checkin_close_after_min: schedules.checkin_close_after_min,
+        room_id: schedules.room_id,
+      })
+      .from(class_sessions)
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          eq(
+            class_sessions.session_date,
+            sql`(NOW() AT TIME ZONE 'Asia/Bangkok')::date`
+          ),
+          eq(class_sessions.is_canceled, false)
+        )
+      )
+      .orderBy(asc(schedules.start_time));
+
+    // รัน Query ทั้งหมดพร้อมกัน
+    const [classSchedules, countResult, allTodaySessions] = await Promise.all([
+      schedulesQuery,
+      memberCountQuery,
+      allTodaySessionsQuery,
+    ]);
+
     const memberCount = Number(countResult[0]?.count ?? 0);
+
+    const processedTodaySessions = processSessionStatuses(allTodaySessions);
+    const activeTodaySession = findActiveSession(processedTodaySessions);
 
     // --- ประกอบร่าง JSON ที่จะส่งกลับไป ---
     return res.status(200).json({
       classDetail: classDetail, // ส่งข้อมูลคลาสที่ "แบน" แล้วไปเลย
       classSchedules,
       memberCount,
+      today_session: activeTodaySession,
+      all_today_sessions: processedTodaySessions,
       currentUserStatus: { isOwner, isMember },
     });
   } catch (error) {
