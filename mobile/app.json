@@ -9,14 +9,21 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSLocalNetworkUsageDescription": "แอปพลิเคชันจำเป็นต้องเข้าถึงข้อมูลเครือข่ายเพื่อตรวจสอบตำแหน่งของคุณในห้องเรียนผ่านสัญญาณ Wi-Fi"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION"
+      ],
+      "package": "com.shadowsduck.mobile"
     },
     "web": {
       "bundler": "metro",
@@ -33,10 +40,17 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "react-native-wifi-reborn"
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "aef3546e-e51a-4b43-8d69-f5aab938d2cd"
+      }
     }
   }
 }
