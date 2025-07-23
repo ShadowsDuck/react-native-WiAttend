@@ -20,10 +20,9 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": [
-        "android.permission.ACCESS_FINE_LOCATION"
-      ],
-      "package": "com.shadowsduck.mobile"
+      "permissions": ["android.permission.ACCESS_FINE_LOCATION"],
+      "package": "com.shadowsduck.mobile",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",

@@ -7,6 +7,7 @@ import sessionsRoutes from "./routes/sessions.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const HOST = "0.0.0.0";
 
 // if (process.env.NODE_ENV === "production") job.start();
 
@@ -28,6 +29,6 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: err.message || "Internal server error" });
 });
 
-app.listen(PORT, () => {
-  console.log("Server is running on PORT:", PORT);
+app.listen(PORT, HOST, () => {
+  console.log(`Server is running on http://${HOST}:${PORT}`);
 });
