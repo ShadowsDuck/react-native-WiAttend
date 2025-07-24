@@ -23,7 +23,7 @@ export async function getUserProfileByUserId(req, res) {
   }
 }
 
-export async function createUserProfile(req, res) {
+export async function upsertUserProfile(req, res) {
   try {
     const { userId } = getAuth(req);
 
@@ -31,20 +31,29 @@ export async function createUserProfile(req, res) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // เช็คซ้ำว่า user ซ้ำไหม
-    const exists = await db.query.users.findFirst({
+    // เช็คว่า user มีอยู่แล้วหรือไม่
+    let user = await db.query.users.findFirst({
       where: (users, { eq }) => eq(users.user_id, userId),
     });
 
-    if (exists) {
-      return res.status(400).json({ message: "User already exists" });
+    // ถ้า user ยังไม่มีในระบบของเรา ให้สร้างใหม่
+    if (!user) {
+      console.log(`User ${userId} not found. Creating new profile.`);
+      const newUser = await db
+        .insert(users)
+        .values({ user_id: userId })
+        .returning();
+      user = newUser[0];
+      // ส่ง status 201 Created สำหรับการสร้างใหม่
+      return res.status(201).json(user);
     }
 
-    const user = await db.insert(users).values({ user_id: userId }).returning();
-
-    res.status(201).json(user[0]);
+    // ถ้า user มีอยู่แล้ว ก็แค่ส่งข้อมูลเดิมกลับไป
+    console.log(`User ${userId} already exists. Returning profile.`);
+    // ส่ง status 200 OK สำหรับการดึงข้อมูลสำเร็จ
+    return res.status(200).json(user);
   } catch (error) {
-    console.error("Error creating the user", error);
+    console.error("Error in upsertUserProfile", error);
     res.status(500).json({ message: "Internal server Error" });
   }
 }

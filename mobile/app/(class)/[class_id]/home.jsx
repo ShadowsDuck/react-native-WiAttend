@@ -19,6 +19,7 @@ import { useClassroom } from "../../../hooks/useClassroom";
 import { useSessions } from "../../../hooks/useSessions";
 import { DAY_OF_WEEK_THAI } from "../../../constants/dayOfWeekThai";
 import CheckInButton from "../../../components/CheckInButton";
+import CheckButton from "../../../components/CheckButton";
 
 const HomePage = () => {
   const { class_id } = useLocalSearchParams();
@@ -80,7 +81,10 @@ const HomePage = () => {
   return (
     <View className="flex-1 bg-[#121212]">
       <Header backgroundColor="#252525" />
-      <ScrollView contentContainerClassName="py-6 pb-10">
+      <ScrollView
+        contentContainerClassName="py-6 pb-10"
+        showsVerticalScrollIndicator={false}
+      >
         <View className="mb-6">
           {/* ส่ง object classData ทั้งหมดที่มี owner_name สำเร็จรูปเข้าไป */}
           <ClassCard item={classData} />
@@ -211,56 +215,132 @@ const HomePage = () => {
                     </Text>
                   </View>
 
-                  {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 4 สถานะ --- */}
-                  {/* เงื่อนไขที่ 0: เช็คชื่อสำเร็จแล้ว -> แสดงปุ่มสีน้ำเงิน */}
-                  {has_checked_in && (
-                    <TouchableOpacity
-                      disabled={true}
-                      className="rounded-lg py-2.5 mt-4 bg-blue-600"
-                    >
-                      <Text className="text-white text-center font-semibold text-base">
-                        เช็คชื่อสำเร็จ
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* เงื่อนไขที่ 1: สถานะเป็น 'active' -> แสดงปุ่มสีเขียวนับถอยหลัง */}
-                  {status === "active" && !has_checked_in && (
-                    <CheckInButton
-                      session={todaySessionForThisSchedule}
-                      onPress={() =>
-                        handleCheckInPress(
-                          todaySessionForThisSchedule.session_id
-                        )
-                      }
-                    />
-                  )}
-
-                  {/* เงื่อนไขที่ 2: สถานะเป็น 'expired' -> แสดงปุ่มสีแดง */}
-                  {status === "expired" && !has_checked_in && (
-                    <TouchableOpacity
-                      disabled={true}
-                      className="rounded-lg py-2.5 mt-4 bg-red-600"
-                    >
-                      <Text className="text-white text-center font-semibold text-base">
-                        หมดเวลาเช็คชื่อ
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* เงื่อนไขที่ 3: ไม่มีสถานะ (คือเป็นวันอื่น) หรือสถานะเป็นอย่างอื่น (upcoming, finished) -> แสดงปุ่มสีเทา */}
-                  {status !== "active" &&
-                    status !== "expired" &&
-                    !has_checked_in && (
-                      <TouchableOpacity
-                        disabled={true}
-                        className="rounded-lg py-2.5 mt-4 bg-gray-600"
-                      >
-                        <Text className="text-white text-center font-semibold text-base">
-                          เช็คชื่อ
+                  {/* --- ส่วนแสดงปุ่มตามเงื่อนไขของเจ้าของชั้นเรียน --- */}
+                  {currentUserStatus?.isOwner ? (
+                    <View className="bg-[#2C2C2C] rounded-xl p-4 mt-4">
+                      <View className="flex-row justify-between items-center mb-3">
+                        <Text className="text-white font-bold text-base">
+                          การเช็คชื่อวันนี้
                         </Text>
-                      </TouchableOpacity>
-                    )}
+                        {/* แสดงสถานะปัจจุบันเป็น Badge สวยๆ */}
+                        {status === "active" && (
+                          <View className="bg-green-500/20 px-2.5 py-1 rounded-full">
+                            <Text className="text-green-400 font-semibold text-xs">
+                              กำลังทำงาน
+                            </Text>
+                          </View>
+                        )}
+                        {status === "expired" && (
+                          <View className="bg-red-500/20 px-2.5 py-1 rounded-full">
+                            <Text className="text-red-400 font-semibold text-xs">
+                              หมดเวลา
+                            </Text>
+                          </View>
+                        )}
+                        {status !== "active" && status !== "expired" && (
+                          <View className="bg-gray-500/20 px-2.5 py-1 rounded-full">
+                            <Text className="text-gray-400 font-semibold text-xs">
+                              ยังไม่เริ่ม
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+
+                      {/* --- ปุ่ม Action ที่เปลี่ยนไปตามสถานะ --- */}
+
+                      {/* สถานะ 1: กำลังเช็คชื่อ (Active) -> แสดงปุ่มนับถอยหลัง */}
+                      {status === "active" && todaySessionForThisSchedule && (
+                        <>
+                          <Text className="text-gray-400 text-center text-sm mb-2">
+                            นักเรียนสามารถเช็คชื่อได้จนกว่าเวลาจะหมด
+                          </Text>
+                          <CheckInButton
+                            session={todaySessionForThisSchedule}
+                            onPress={() =>
+                              Alert.alert("สถานะ", "การเช็คชื่อกำลังดำเนินอยู่")
+                            }
+                          />
+                        </>
+                      )}
+
+                      {/* สถานะ 2: หมดเวลาแล้ว (Expired) -> แสดงปุ่ม Disabled สีแดง */}
+                      {status === "expired" && (
+                        <CheckButton
+                          disabled={true}
+                          buttonStyle={"rounded-lg py-3 mt-2 bg-red-800/50"}
+                          textStyle={
+                            "text-red-400 text-center font-bold text-base"
+                          }
+                          text={"หมดเวลาเช็คชื่อ"}
+                        />
+                      )}
+
+                      {/* สถานะ 3: ยังไม่เริ่ม หรือสถานะอื่นๆ -> แสดงปุ่ม "เริ่มเช็คชื่อ" */}
+                      {status !== "active" && status !== "expired" && (
+                        <CheckButton
+                          disabled={true}
+                          buttonStyle={"rounded-lg py-3 mt-2 bg-gray-600/50"}
+                          textStyle={
+                            "text-white text-center font-semibold text-base"
+                          }
+                          text={"ยังไม่ถึงเวลาเช็คชื่อ"}
+                        />
+                      )}
+                    </View>
+                  ) : (
+                    <>
+                      {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 4 สถานะ --- */}
+                      {/* เงื่อนไขที่ 0: เช็คชื่อสำเร็จแล้ว -> แสดงปุ่มสีน้ำเงิน */}
+                      {has_checked_in && (
+                        <CheckButton
+                          disabled={true}
+                          buttonStyle={"rounded-lg py-2.5 mt-4 bg-blue-600/50"}
+                          textStyle={
+                            "text-white text-center font-semibold text-base"
+                          }
+                          text={"เช็คชื่อสำเร็จ"}
+                        />
+                      )}
+
+                      {/* เงื่อนไขที่ 1: สถานะเป็น 'active' -> แสดงปุ่มสีเขียวนับถอยหลัง */}
+                      {status === "active" && !has_checked_in && (
+                        <CheckInButton
+                          session={todaySessionForThisSchedule}
+                          onPress={() =>
+                            handleCheckInPress(
+                              todaySessionForThisSchedule.session_id
+                            )
+                          }
+                        />
+                      )}
+
+                      {/* เงื่อนไขที่ 2: สถานะเป็น 'expired' -> แสดงปุ่มสีแดง */}
+                      {status === "expired" && !has_checked_in && (
+                        <CheckButton
+                          disabled={true}
+                          buttonStyle={"rounded-lg py-3 mt-2 bg-red-800/50"}
+                          textStyle={
+                            "text-red-400 text-center font-bold text-base"
+                          }
+                          text={"หมดเวลาเช็คชื่อ"}
+                        />
+                      )}
+
+                      {/* เงื่อนไขที่ 3: ไม่มีสถานะ (คือเป็นวันอื่น) หรือสถานะเป็นอย่างอื่น (upcoming, finished) -> แสดงปุ่มสีเทา */}
+                      {status !== "active" &&
+                        status !== "expired" &&
+                        !has_checked_in && (
+                          <CheckButton
+                            disabled={true}
+                            buttonStyle={"rounded-lg py-3 mt-2 bg-gray-600/50"}
+                            textStyle={
+                              "text-white text-center font-semibold text-base"
+                            }
+                            text={"ยังไม่ถึงเวลาเช็คชื่อ"}
+                          />
+                        )}
+                    </>
+                  )}
                 </View>
               );
             })}

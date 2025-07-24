@@ -21,31 +21,41 @@ export const useSocialAuth = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const { startSSOFlow } = useSSO();
-
   const { createUserProfile } = useUserProfile();
 
   const handleSocialAuth = async (provider) => {
     setIsLoading(true);
     try {
+      const redirectUrl = AuthSession.makeRedirectUri({
+        scheme: "mobile",
+        path: "oauth-callback",
+      });
+
       const { createdSessionId, setActive } = await startSSOFlow({
         strategy: provider,
-        redirectUrl: AuthSession.makeRedirectUri(),
+        redirectUrl: redirectUrl,
       });
 
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
+        const user = await createUserProfile();
+        return user;
       }
-
-      const user = await createUserProfile(); // สร้าง user profile ใน DB ของเรา
-      return user;
     } catch (error) {
-      console.log("Error in social auth", error);
-      Alert.alert(
-        "เกิดข้อผิดพลาด",
-        "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
-      );
-    } finally {
-      setIsLoading(false);
+      if (
+        error.response &&
+        error.response.status === 400 &&
+        error.response.data?.message === "User already exists"
+      ) {
+        console.log("User already exists, login successful.");
+        return { message: "Login successful" };
+      } else {
+        console.log("Error in social auth", error);
+        Alert.alert(
+          "เกิดข้อผิดพลาด",
+          "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
+        );
+      }
     }
   };
 
