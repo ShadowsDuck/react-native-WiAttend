@@ -56,6 +56,8 @@ export const useSocialAuth = () => {
           "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
         );
       }
+    } finally {
+      setIsLoading(false);
     }
   };
 
