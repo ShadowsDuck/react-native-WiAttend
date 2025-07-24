@@ -16,15 +16,15 @@ import Header from "../../../components/Header";
 import ClassCard from "../../../components/ClassCard";
 import Loading from "../../../components/Loading";
 import { useClassroom } from "../../../hooks/useClassroom";
-import { useSessions } from "../../../hooks/useSessions";
 import { DAY_OF_WEEK_THAI } from "../../../constants/dayOfWeekThai";
 import CheckInButton from "../../../components/CheckInButton";
 import CheckButton from "../../../components/CheckButton";
+import { useCheckInProcess } from "../../../hooks/useCheckInProcess";
 
 const HomePage = () => {
   const { class_id } = useLocalSearchParams();
   const { classInfo, loading, fetchClassesById } = useClassroom();
-  const { checkin } = useSessions();
+  const { isCheckingIn, attemptCheckIn } = useCheckInProcess();
   const [isCopied, setIsCopied] = useState(false);
 
   const copyToClipboard = async () => {
@@ -68,13 +68,10 @@ const HomePage = () => {
 
   const handleCheckInPress = async (sessionId) => {
     try {
-      const result = await checkin(sessionId);
-      Alert.alert("สำเร็จ!", result.message || "เช็คชื่อเรียบร้อยแล้ว");
-      // สำคัญ: ดึงข้อมูลใหม่เพื่ออัปเดต UI
+      await attemptCheckIn(sessionId);
       fetchClassesById(class_id);
-    } catch (error) {
-      const errorMessage = error.response?.data?.message || "เกิดข้อผิดพลาด";
-      Alert.alert("เช็คชื่อไม่สำเร็จ", errorMessage);
+    } catch (_error) {
+      console.log("Check-in attempt failed, alert shown by hook.");
     }
   };
 
@@ -289,7 +286,7 @@ const HomePage = () => {
                     </View>
                   ) : (
                     <>
-                      {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 4 สถานะ --- */}
+                      {/* --- ส่วนแสดงปุ่มตามเงื่อนไข 4 สถานะของสมาชิก --- */}
                       {/* เงื่อนไขที่ 0: เช็คชื่อสำเร็จแล้ว -> แสดงปุ่มสีน้ำเงิน */}
                       {has_checked_in && (
                         <CheckButton
@@ -306,6 +303,7 @@ const HomePage = () => {
                       {status === "active" && !has_checked_in && (
                         <CheckInButton
                           session={todaySessionForThisSchedule}
+                          disabled={isCheckingIn}
                           onPress={() =>
                             handleCheckInPress(
                               todaySessionForThisSchedule.session_id

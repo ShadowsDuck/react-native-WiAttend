@@ -16,7 +16,12 @@ const formatTime = (totalSeconds) => {
   )}`;
 };
 
-const CheckInButton = ({ session, onPress }) => {
+const CheckInButton = ({
+  session,
+  onPress,
+  disabled = false,
+  isDisplayOnly = false,
+}) => {
   // State สำหรับเก็บเวลาที่เหลือ (เป็นวินาที)
   const [remainingTime, setRemainingTime] = useState(null);
 
@@ -74,7 +79,7 @@ const CheckInButton = ({ session, onPress }) => {
     return (
       <TouchableOpacity
         disabled={true}
-        className="rounded-lg py-2.5 mt-4 bg-gray-500"
+        className="rounded-lg py-2.5 mt-4 bg-gray-600/50"
       >
         <Text className="text-white text-center font-semibold text-base">
           กำลังคำนวณ...
@@ -88,7 +93,7 @@ const CheckInButton = ({ session, onPress }) => {
     return (
       <TouchableOpacity
         disabled={true}
-        className="rounded-lg py-2.5 mt-4 bg-red-600"
+        className="rounded-lg py-2.5 mt-4 bg-red-800/50"
       >
         <Text className="text-white text-center font-bold text-base">
           หมดเวลาเช็คชื่อ
@@ -101,11 +106,14 @@ const CheckInButton = ({ session, onPress }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
+      disabled={disabled}
       activeOpacity={0.7}
       className="rounded-lg py-2.5 mt-4 bg-green-600"
     >
       <Text className="text-white text-center font-semibold text-base">
-        เช็คชื่อ (เหลือ {formatTime(remainingTime)})
+        {disabled
+          ? "กำลังดำเนินการ..."
+          : `เช็คชื่อ (เหลือ ${formatTime(remainingTime)})`}
       </Text>
     </TouchableOpacity>
   );

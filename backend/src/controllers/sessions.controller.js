@@ -44,6 +44,66 @@ export async function checkin(req, res) {
     }
     const sessionInfo = sessionsResult[0];
 
+    // 1. ดึง BSSID ที่สแกนเจอจาก body ของ request
+    const { wifiData: scannedWifiData } = req.body;
+    if (
+      !scannedWifiData ||
+      !Array.isArray(scannedWifiData) ||
+      scannedWifiData.length === 0
+    ) {
+      return res
+        .status(400)
+        .json({ message: "ข้อมูลการสแกน Wi-Fi หายไปหรือไม่ถูกต้อง" });
+    }
+
+    // 2. ดึงข้อมูล Access Point ที่อนุญาตจาก DB (เหมือนเดิม)
+    const classroomRoomId = sessionInfo.schedules.room_id;
+    const allowedAccessPoints = await db.query.wifi_access_points.findMany({
+      where: (wifi_access_points, { eq }) =>
+        eq(wifi_access_points.room_id, classroomRoomId),
+    });
+
+    if (allowedAccessPoints.length === 0) {
+      return res
+        .status(400)
+        .json({ message: "ห้องเรียนนี้ไม่มี Wi-Fi สำหรับการเช็คชื่อ" });
+    }
+
+    // 3. *** Logic การตรวจสอบใหม่ทั้งหมด ***
+    // เราจะหาว่ามี Wi-Fi "อย่างน้อยหนึ่งตัว" ที่สแกนเจอ
+    // ซึ่งตรงกับ BSSID ที่อนุญาต "และ" มีความแรงสัญญาณ (RSSI) สูงกว่าค่าขั้นต่ำที่กำหนดไว้
+    const isLocationVerified = scannedWifiData.some((scannedWifi) => {
+      // 3.1 หา AP ที่อนุญาตซึ่งมี BSSID ตรงกับตัวที่เพิ่งสแกนเจอ
+      const matchingAllowedAP = allowedAccessPoints.find(
+        (allowedAP) => allowedAP.bssid.toLowerCase() === scannedWifi.bssid
+      );
+
+      // 3.2 ถ้าไม่เจอ BSSID ที่ตรงกันเลยสำหรับตัวนี้ ให้ข้ามไป (return false)
+      if (!matchingAllowedAP) {
+        return false;
+      }
+
+      // 3.3 ถ้าเจอ BSSID ที่ตรงกัน ให้เปรียบเทียบ RSSI ต่อ
+      // ค่า RSSI เป็นค่าติดลบ (เช่น -50, -60) ยิ่งค่า "ใกล้ 0" ยิ่งแรง
+      // ดังนั้น scannedWifi.rssi >= matchingAllowedAP.min_rssi จึงเป็นการเช็คว่าสัญญาณแรงพอ
+      const isRssiStrongEnough = scannedWifi.rssi >= matchingAllowedAP.min_rssi;
+
+      console.log(
+        `Checking BSSID: ${scannedWifi.bssid}, Scanned RSSI: ${scannedWifi.rssi}, Required min_rssi: ${matchingAllowedAP.min_rssi}, Strong enough: ${isRssiStrongEnough}`
+      );
+
+      return isRssiStrongEnough; // คืนค่า true ถ้าสัญญาณแรงพอ
+    });
+
+    // 4. ถ้าหลังจากวนเช็คทั้งหมดแล้วยังไม่มีตัวไหนตรงเงื่อนไขเลย -> ปฏิเสธ
+    if (!isLocationVerified) {
+      return res
+        .status(400)
+        .json({
+          message: "คุณไม่ได้อยู่บริเวณห้องเรียน หรือสัญญาณ Wi-Fi อ่อนเกินไป",
+        });
+    }
+
     // เช็คชื่อไปหรือยัง
     const exists = await db.query.attendances.findFirst({
       where: (attendances, { eq, and }) =>

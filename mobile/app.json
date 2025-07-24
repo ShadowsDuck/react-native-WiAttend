@@ -20,7 +20,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "permissions": ["android.permission.ACCESS_FINE_LOCATION"],
+      "permissions": [
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_WIFI_STATE"
+      ],
       "package": "com.shadowsduck.mobile"
     },
     "web": {
@@ -29,6 +32,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "react-native-wifi-reborn",
       "expo-router",
       [
         "expo-splash-screen",

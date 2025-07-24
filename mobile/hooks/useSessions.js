@@ -11,10 +11,13 @@ export const useSessions = () => {
   // const [classInfo, setClassInfo] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const checkin = async (sessionId) => {
+  const checkin = async (sessionId, scannedWifiData) => {
     if (!sessionId) {
       console.error("❌ Check-in failed: sessionId is missing.");
       throw new Error("Session ID is required.");
+    }
+    if (!scannedWifiData || scannedWifiData.length === 0) {
+      throw new Error("Wi-Fi scan data is required.");
     }
 
     setLoading(true);
@@ -23,7 +26,7 @@ export const useSessions = () => {
 
       const res = await axios.post(
         `${API_URL}/sessions/${sessionId}/checkin`,
-        {},
+        { wifiData: scannedWifiData },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -33,7 +36,6 @@ export const useSessions = () => {
       );
       return res.data;
     } catch (error) {
-      console.error("❌ Error join classroom:", error.response?.data || error);
       throw error;
     } finally {
       setLoading(false);
