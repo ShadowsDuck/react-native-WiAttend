@@ -313,3 +313,117 @@ export async function getClassById(req, res) {
     return res.status(500).json({ message: "Internal server error" });
   }
 }
+
+export async function updateClassById(req, res) {
+  try {
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { classId } = req.params;
+
+    // ตรวจสอบว่าคลาสมีอยู่จริงหรือไม่
+    const existingClass = await db.query.classes.findFirst({
+      where: (classes, { eq }) => eq(classes.class_id, classId),
+    });
+
+    if (!existingClass) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    // ตรวจสอบสิทธิ์ความเป็นเจ้าของ
+    if (existingClass.owner_user_id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    // Partial Update และเพิ่มการ Validation
+    const { subject_name, semester_start_date, semester_weeks } = req.body;
+    const dataToUpdate = {};
+
+    if (subject_name !== undefined) {
+      dataToUpdate.subject_name = subject_name;
+    }
+
+    if (semester_start_date !== undefined) {
+      // ตรวจสอบว่าเป็นวันที่ที่ถูกต้องหรือไม่
+      const date = new Date(semester_start_date);
+      if (isNaN(date.getTime())) {
+        return res
+          .status(400)
+          .json({ message: "Invalid semester_start_date format" });
+      }
+      dataToUpdate.semester_start_date = semester_start_date;
+    }
+
+    if (semester_weeks !== undefined) {
+      const semester_weeksNumber = Number(semester_weeks);
+      // ตรวจสอบตัวแปรที่ถูกต้อง
+      if (isNaN(semester_weeksNumber) || semester_weeksNumber <= 0) {
+        return res.status(400).json({
+          message: "Invalid semester_weeks format, must be a positive number",
+        });
+      }
+      // ระบุชื่อคอลัมน์ใน DB ให้ถูกต้อง
+      dataToUpdate.semester_weeks = semester_weeksNumber;
+    }
+
+    // ตรวจสอบว่ามีข้อมูลส่งมาให้อัปเดตหรือไม่
+    if (Object.keys(dataToUpdate).length === 0) {
+      return res.status(400).json({ message: "No fields provided to update" });
+    }
+
+    // อัปเดตและส่งข้อมูลล่าสุดกลับไป
+    const updatedClasses = await db
+      .update(classes)
+      .set(dataToUpdate) // ใช้ Object ที่สร้างแบบไดนามิก
+      .where(eq(classes.class_id, classId))
+      .returning(); // สั่งให้ DB คืนค่าแถวที่อัปเดตแล้วกลับมา
+
+    // ส่งข้อมูลคลาสที่อัปเดตแล้วกลับไปใน response
+    res.status(200).json(updatedClasses[0]);
+  } catch (error) {
+    console.error("Error updating the class:", error); // เพิ่มรายละเอียดใน log
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function deleteClassById(req, res) {
+  try {
+    const { userId } = getAuth(req);
+
+    if (!userId) {
+      return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    const { classId } = req.params;
+
+    // ตรวจสอบว่าคลาสมีอยู่จริงหรือไม่
+    const existingClass = await db.query.classes.findFirst({
+      where: (classes, { eq }) => eq(classes.class_id, classId),
+    });
+
+    if (!existingClass) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    // ตรวจสอบสิทธิ์ความเป็นเจ้าของ
+    if (existingClass.owner_user_id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    // ลบชั้นเรียน
+    await db.delete(classes).where(eq(classes.class_id, classId));
+
+    // ส่ง 204 No Content กลับไป
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting the class:", error);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}

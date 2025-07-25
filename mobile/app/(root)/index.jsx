@@ -11,14 +11,14 @@ import { useEffect, useState } from "react";
 import FloatingButton from "../../components/FloatingButton";
 import ClassCard from "../../components/ClassCard";
 import Loading from "../../components/Loading";
-import { useClassroom } from "../../hooks/useClassroom";
+import { useClasses } from "../../hooks/useClasses";
 import { useRouter } from "expo-router";
 import { StatusBarBackground } from "@/components/StatusBar";
 
 export default function App() {
   const router = useRouter();
   const { user, isLoaded } = useUser();
-  const { classrooms, loading, error, fetchUserClasses } = useClassroom();
+  const { classes, loading, error, fetchUserClasses } = useClasses();
   const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
@@ -60,11 +60,11 @@ export default function App() {
 
       {error ? (
         <Text className="text-red-400 text-center mt-10">เกิดข้อผิดพลาด</Text>
-      ) : classrooms.length === 0 ? (
+      ) : classes.length === 0 ? (
         <Text className="text-gray-400 text-center mt-10">ไม่มีชั้นเรียน</Text>
       ) : (
         <FlatList
-          data={classrooms}
+          data={classes}
           renderItem={({ item }) => <ClassCard item={item} />}
           keyExtractor={(item) => item.class_id.toString()}
           contentContainerStyle={{ paddingBottom: 120 }}

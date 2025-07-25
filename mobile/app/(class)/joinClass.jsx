@@ -2,14 +2,14 @@ import { useRouter } from "expo-router";
 import { View, Text, ScrollView, Alert } from "react-native";
 import Input from "../../components/Input";
 import { useState } from "react";
-import { useClassroom } from "../../hooks/useClassroom";
+import { useClasses } from "../../hooks/useClasses";
 import Loading from "../../components/Loading";
 import Header from "../../components/Header";
 
 const JoinClassroom = () => {
   const router = useRouter();
 
-  const { loading, joinClassroom } = useClassroom();
+  const { loading, joinClass } = useClasses();
 
   const [joinCode, setJoinCode] = useState("");
 
@@ -20,7 +20,7 @@ const JoinClassroom = () => {
         return;
       }
 
-      await joinClassroom({
+      await joinClass({
         join_code: joinCode.trim(),
       });
 

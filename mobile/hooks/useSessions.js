@@ -1,7 +1,7 @@
 import axios from "axios";
 import { useCallback, useState } from "react";
 import { useAuth, useUser } from "@clerk/clerk-expo";
-import { API_URL } from "../constants/api.js";
+import API_URL from "../config/api";
 
 export const useSessions = () => {
   const { getToken } = useAuth();
