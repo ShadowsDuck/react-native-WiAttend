@@ -1,136 +1,184 @@
-import { useCallback, useState } from "react";
-import { useAuth } from "@clerk/clerk-expo";
+import { useCallback, useState, useRef } from "react";
+import { useAuth, useUser } from "@clerk/clerk-expo";
 import axios from "axios";
-import { Alert } from "react-native";
 import API_URL from "../config/api";
 
-/**
- * Custom Hook สำหรับจัดการข้อมูลทั้งหมดที่เกี่ยวกับคลาสเรียน (Classes)
- * แก้ไขปัญหา Infinite Loop และเพิ่ม Error Handling ที่ดีขึ้น
- */
 export const useClasses = () => {
-  // State หลัก: loading, error
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-
-  // State สำหรับข้อมูล:
-  const [classes, setClasses] = useState([]); // เก็บ "รายการ" คลาสทั้งหมด (Array)
-  const [classData, setClassData] = useState(null); // เก็บข้อมูลของ "คลาสเดียว" (Object)
-
-  // ดึงฟังก์ชัน getToken จาก Clerk's useAuth hook
   const { getToken } = useAuth();
+  const { user } = useUser();
 
-  // --- Helper Functions ---
+  // ใช้ useRef เพื่อเก็บ getToken โดยไม่ให้มันเป็น dependency
+  const getTokenRef = useRef(getToken);
+  getTokenRef.current = getToken; // อัปเดต ref ทุกครั้งที่ render
 
-  /**
-   * ฟังก์ชันสำหรับจัดการ Error
-   */
-  const handleError = (err, action) => {
-    console.error(`❌ Error ${action}:`, err.response?.data || err.message);
-    setError(err);
+  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [classes, setClasses] = useState([]);
+  const [classData, setClassData] = useState(null);
 
-    // แสดง Alert เฉพาะ error ที่สำคัญ
-    if (err.response?.status === 401) {
-      Alert.alert("ผิดพลาด", "กรุณาเข้าสู่ระบบใหม่");
-    } else if (err.response?.status === 404) {
-      Alert.alert("ผิดพลาด", "ไม่พบข้อมูลที่ต้องการ");
-    } else if (err.response?.status >= 500) {
-      Alert.alert("ผิดพลาด", "เกิดข้อผิดพลาดจากเซิร์ฟเวอร์");
-    }
-  };
+  // เพิ่ม state สำหรับติดตามว่าเคยโหลดข้อมูลแล้วหรือยัง
+  const [hasInitialized, setHasInitialized] = useState(false);
 
-  // --- Functions ---
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [retryAttempt, setRetryAttempt] = useState(0);
+  const [retryMessage, setRetryMessage] = useState("");
 
-  /**
-   * สร้างคลาสเรียนใหม่
-   */
   const createClass = useCallback(async (data) => {
     setLoading(true);
-    setError(null);
     try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+      const token = await getTokenRef.current();
 
-      const res = await axios.post(`${API_URL}/classes`, data, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000, // 10 วินาที timeout
-      });
-
-      // อัพเดต classes list
-      await fetchUserClasses();
+      const res = await axios.post(
+        `${API_URL}/classes`,
+        {
+          subject_name: data.subject_name,
+          semester_start_date: data.semester_start_date,
+          semester_weeks: parseInt(data.semester_weeks),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       return res.data;
-    } catch (err) {
-      handleError(err, "creating class");
-      throw err;
+    } catch (error) {
+      console.error(
+        "❌ Error creating classroom:",
+        error.response?.data || error
+      );
+      throw error;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /**
-   * ดึง "รายการ" คลาสทั้งหมดที่ผู้ใช้เกี่ยวข้อง
-   */
-  const fetchUserClasses = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+  const fetchUserClasses = useCallback(
+    async (options = {}) => {
+      const { retryCount = 0, isRefresh = false } = options;
 
-      const res = await axios.get(`${API_URL}/classes`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
-      });
+      if (!user) {
+        setInitialLoading(false);
+        return;
+      }
 
-      setClasses(Array.isArray(res.data) ? res.data : []);
-      return res.data;
-    } catch (err) {
-      handleError(err, "fetching user classes");
-      setClasses([]); // ใส่ array ว่างแทน throw error
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+      setLoading(true);
+      if (retryCount === 0) {
+        setError(null);
+        setIsRetrying(false);
+      } else {
+        if (!isRefresh) {
+          setIsRetrying(true);
+        }
+      }
+      setRetryAttempt(retryCount);
 
-  /**
-   * ดึงข้อมูลของ "คลาสเดียว" ตาม ID
-   */
+      try {
+        const token = await getTokenRef.current();
+        const res = await axios.get(`${API_URL}/classes`, {
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 6000,
+        });
+
+        if (Array.isArray(res.data)) {
+          setClasses(res.data);
+          setInitialLoading(false);
+          setIsRetrying(false);
+        } else {
+          setClasses([]);
+          setInitialLoading(false);
+          setIsRetrying(false);
+        }
+        setLoading(false);
+      } catch (error) {
+        console.log(
+          `❌ Fetch failed (attempt ${retryCount + 1}):`,
+          error.message
+        );
+        const isServerNotReady =
+          typeof error.response?.data === "string" &&
+          error.response.data.includes("<!DOCTYPE html>");
+
+        if (isServerNotReady && retryCount < 2) {
+          const waitTime = (retryCount + 1) * 1500;
+          console.log(
+            `🔄 Server not ready, retrying in ${waitTime / 1000} seconds...`
+          );
+          setRetryMessage(`เซิร์ฟเวอร์ยังไม่พร้อม รอ ${waitTime / 1000} วิ...`);
+
+          setTimeout(() => {
+            fetchUserClasses({ ...options, retryCount: retryCount + 1 });
+          }, waitTime);
+
+          return;
+        } else {
+          console.error(
+            "❌ Error fetching classes (Final)",
+            error.response?.data || error.message
+          );
+          setError(error);
+          setClasses([]);
+          setInitialLoading(false);
+          setIsRetrying(false);
+          setLoading(false);
+        }
+      }
+    },
+    [user]
+  );
+
   const fetchClassById = useCallback(async (classId) => {
     if (!classId) {
       console.warn("fetchClassById: No classId provided");
+      setError(null);
+      setClassData(null);
+      setHasInitialized(true); // ถึงแม้ไม่มี classId ก็ถือว่า initialized แล้ว
       return;
     }
 
-    setLoading(true);
+    // ถ้ายังไม่เคย initialize ให้เซ็ต loading เป็น true
+    if (!hasInitialized) {
+      setLoading(true);
+    } else {
+      // ถ้า initialize แล้ว ให้เซ็ต loading แค่เมื่อไม่มีข้อมูลเก่า
+      setLoading(!classData);
+    }
+
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+      const token = await getTokenRef.current();
 
       const res = await axios.get(`${API_URL}/classes/${classId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      setClassData(res.data);
-      return res.data;
-    } catch (err) {
-      console.log(
-        `❌ Failed to fetch class ${classId}:`,
-        err.response?.data || err.message
+      if (res.data && res.data.classDetail) {
+        setClassData(res.data);
+        setError(null);
+      } else {
+        console.warn("Unexpected response", res.data);
+        setClassData(null);
+        throw new Error("Invalid data structure received from server.");
+      }
+    } catch (error) {
+      console.error(
+        "❌ Error fetching classes by id",
+        error.response?.data || error.message
       );
-      handleError(err, `fetching class ${classId}`);
+      setError(error);
       setClassData(null);
-      throw err; // ส่ง error ต่อไปเพื่อให้ component จัดการ
     } finally {
       setLoading(false);
+      setHasInitialized(true); // เซ็ตว่า initialized แล้วไม่ว่าจะสำเร็จหรือไม่
     }
   }, []);
 
-  /**
-   * อัปเดตข้อมูลของคลาสตาม ID
-   */
   const updateClassesById = useCallback(async (classId, updatedData) => {
     if (!classId) throw new Error("ClassId is required.");
 
@@ -138,19 +186,19 @@ export const useClasses = () => {
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+      const token = await getTokenRef.current();
 
       const res = await axios.put(
         `${API_URL}/classes/${classId}`,
         updatedData,
         {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
 
-      // อัพเดต state
       setClassData(res.data);
       setClasses((prev) =>
         prev.map((cls) =>
@@ -161,59 +209,44 @@ export const useClasses = () => {
       );
 
       return res.data;
-    } catch (err) {
-      handleError(err, "updating class");
-      throw err;
+    } catch (error) {
+      console.error(
+        "❌ Error updating class:",
+        error.response?.data || error.message
+      );
+      setError(error);
+      throw error;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /**
-   * เข้าร่วมคลาสด้วย Join Code
-   */
-  const joinClass = useCallback(async (joinCode) => {
-    if (!joinCode) {
-      Alert.alert("ผิดพลาด", "กรุณาใส่รหัสเข้าร่วม");
-      return;
-    }
-
+  const joinClass = useCallback(async (data) => {
     setLoading(true);
-    setError(null);
-
     try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+      const token = await getTokenRef.current();
 
       const res = await axios.post(
         `${API_URL}/classes/join`,
-        { join_code: joinCode },
         {
-          headers: { Authorization: `Bearer ${token}` },
-          timeout: 10000,
+          join_code: data.join_code,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
         }
       );
-
-      // อัพเดต classes list
-      await fetchUserClasses();
       return res.data;
-    } catch (err) {
-      if (err.response?.status === 404) {
-        Alert.alert("ผิดพลาด", "ไม่พบคลาสที่ต้องการเข้าร่วม");
-      } else if (err.response?.status === 409) {
-        Alert.alert("ผิดพลาด", "คุณเป็นสมาชิกของคลาสนี้อยู่แล้ว");
-      } else {
-        handleError(err, "joining class");
-      }
-      throw err;
+    } catch (error) {
+      console.error("❌ Error join classroom:", error.response?.data || error);
+      throw error;
     } finally {
       setLoading(false);
     }
   }, []);
 
-  /**
-   * ลบคลาสตาม ID
-   */
   const deleteClassById = useCallback(async (classId) => {
     if (!classId) throw new Error("ClassId is required.");
 
@@ -221,23 +254,18 @@ export const useClasses = () => {
     setError(null);
 
     try {
-      const token = await getToken();
-      if (!token) throw new Error("No authentication token");
+      const token = await getTokenRef.current();
 
       await axios.delete(`${API_URL}/classes/${classId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 10000,
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
 
-      // อัพเดต state
       setClasses((prev) =>
         prev.filter((cls) => cls.class_id !== Number(classId))
       );
-
-      // // ถ้าคลาสที่ลบคือคลาสที่กำลังดูอยู่ ให้ clear classData
-      // if (classData?.classDetail?.class_id === Number(classId)) {
-      //   setClassData(null);
-      // }
 
       return true;
     } catch (error) {
@@ -245,20 +273,34 @@ export const useClasses = () => {
         "❌ Error deleting class:",
         error.response?.data || error.message
       );
+      setError(error);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // --- Return ---
+  // เพิ่มฟังก์ชันสำหรับ reset state เมื่อเปลี่ยนคลาส
+  const resetClassData = useCallback(() => {
+    setClassData(null);
+    setError(null);
+    setHasInitialized(false);
+    setLoading(false);
+  }, []);
+
   return {
     loading,
+    initialLoading,
     error,
     classes,
     classData,
+    hasInitialized,
+    isRetrying,
+    retryAttempt,
+    retryMessage,
     createClass,
     fetchUserClasses,
     fetchClassById,
+    resetClassData,
     updateClassesById,
     joinClass,
     deleteClassById,

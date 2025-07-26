@@ -1,5 +1,12 @@
 // HomePage.js
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  AppState,
+} from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState, useEffect } from "react";
 import { Book1, User, Key, CopySuccess } from "iconsax-react-native";
@@ -19,12 +26,32 @@ import ScheduleCard from "../../../components/ScheduleCard";
 
 const HomePage = () => {
   const { class_id } = useLocalSearchParams();
-  const { classData, loading, fetchClassById } = useClasses();
+  const router = useRouter();
+
+  const {
+    classData,
+    loading,
+    error,
+    hasInitialized,
+    fetchClassById,
+    resetClassData,
+  } = useClasses();
   const { isCheckingIn, attemptCheckIn } = useCheckInProcess();
   const [isCopied, setIsCopied] = useState(false);
-  const [hasAttemptedLoad, setHasAttemptedLoad] = useState(false);
-  const [loadError, setLoadError] = useState(false);
-  const router = useRouter();
+
+  // Reset ข้อมูลเมื่อ class_id เปลี่ยน
+  useEffect(() => {
+    resetClassData();
+  }, [class_id, resetClassData]);
+
+  // ดึงข้อมูลเมื่อเข้าหน้าหรือกลับมาหน้านี้
+  useFocusEffect(
+    useCallback(() => {
+      if (class_id) {
+        fetchClassById(class_id);
+      }
+    }, [class_id, fetchClassById])
+  );
 
   const copyToClipboard = async () => {
     if (isCopied) return;
@@ -36,90 +63,59 @@ const HomePage = () => {
     }
   };
 
-  // ฟังก์ชันสำหรับโหลดข้อมูล
-  const loadClassData = useCallback(async () => {
-    if (!class_id) return;
-
-    try {
-      setLoadError(false);
-      await fetchClassById(class_id);
-    } catch (error) {
-      console.log("❌ Failed to load class data:", error);
-      setLoadError(true);
-    } finally {
-      setHasAttemptedLoad(true);
-    }
-  }, [class_id, fetchClassById]);
-
-  // โหลดข้อมูลครั้งแรกเมื่อ component mount
-  useEffect(() => {
-    if (class_id && !hasAttemptedLoad) {
-      loadClassData();
-    }
-  }, [class_id, hasAttemptedLoad, loadClassData]);
-
-  // Refresh เมื่อกลับมาที่หน้านี้ (ยกเว้นครั้งแรก)
-  useFocusEffect(
-    useCallback(() => {
-      if (class_id && hasAttemptedLoad) {
-        loadClassData();
-      }
-    }, [class_id, hasAttemptedLoad, loadClassData])
-  );
-
   const handleCheckInPress = async (sessionId) => {
     try {
       await attemptCheckIn(sessionId);
-      loadClassData(); // Re-fetch data to update UI
+      if (class_id) {
+        fetchClassById(class_id);
+      }
     } catch (_error) {
       console.log("Check-in attempt failed, alert shown by hook.");
     }
   };
 
   const handleRetry = () => {
-    setHasAttemptedLoad(false);
-    setLoadError(false);
+    if (class_id) {
+      fetchClassById(class_id);
+    }
   };
 
-  // กรณีที่ไม่มี class_id
-  if (!class_id) {
-    return (
-      <View className="flex-1 bg-[#121212]">
-        <Header backgroundColor="#252525" />
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
-        </View>
-      </View>
-    );
-  }
+  // --- การจัดการ UI ตาม State ---
+  // if (!class_id) {
+  //   return (
+  //     <View className="flex-1 bg-[#121212]">
+  //       <Header backgroundColor="#252525" />
+  //       <View className="flex-1 justify-center items-center">
+  //         <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
   // แสดง Loading เมื่อ:
-  // 1. ยังไม่เคยพยายามโหลด หรือ
-  // 2. กำลังโหลดอยู่ และยังไม่มีข้อมูล
-  if (!hasAttemptedLoad || (loading && !classData)) {
+  // 1. ยังไม่เคย initialize (ครั้งแรก)
+  // 2. กำลัง loading และยังไม่มีข้อมูลเก่า
+  if (!hasInitialized || (loading && !classData)) {
     return <Loading />;
   }
 
-  // แสดง Error เมื่อโหลดแล้วแต่มี error หรือไม่มีข้อมูล
-  if (loadError || !classData || !classData.classDetail) {
+  // แสดง Error เมื่อ: มี error หรือไม่มีข้อมูล (หลังจาก initialize แล้ว)
+  if (error || !classData?.classDetail) {
     return (
       <View className="flex-1 bg-[#121212]">
         <Header backgroundColor="#252525" />
         <View className="flex-1 justify-center items-center px-6">
           <Text className="text-red-500 text-lg text-center mb-2">
-            ไม่พบข้อมูลคลาส
+            ไม่สามารถโหลดข้อมูลคลาสได้
           </Text>
           <Text className="text-gray-400 text-sm text-center mb-6">
-            อาจเกิดจากปัญหาการเชื่อมต่อหรือคลาสไม่มีอยู่
+            อาจเกิดจากปัญหาการเชื่อมต่อหรือคลาสนี้ไม่มีอยู่จริง
           </Text>
           <TouchableOpacity
             className="bg-blue-500 px-6 py-3 rounded-lg"
             onPress={handleRetry}
-            disabled={loading}
           >
-            <Text className="text-white font-semibold">
-              {loading ? "กำลังโหลด..." : "ลองอีกครั้ง"}
-            </Text>
+            <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -155,7 +151,7 @@ const HomePage = () => {
     <View className="flex-1 bg-[#121212]">
       <Header backgroundColor="#252525" />
 
-      {/* แสดง Loading indicator เล็กๆ ตอน refresh */}
+      {/* แสดงตัวบ่งชี้การรีเฟรช เมื่อมีข้อมูลเก่าแล้วกำลังโหลดใหม่ */}
       {loading && classData && (
         <View className="absolute top-20 right-5 z-10 bg-blue-500 px-3 py-1 rounded-full">
           <Text className="text-white text-xs">กำลังอัพเดต...</Text>
@@ -163,10 +159,10 @@ const HomePage = () => {
       )}
 
       <ScrollView
-        contentContainerClassName="py-6 pb-10"
+        contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
       >
-        <View className="mb-6">
+        <View className="my-6">
           <ClassCard item={classDetail} />
         </View>
 
