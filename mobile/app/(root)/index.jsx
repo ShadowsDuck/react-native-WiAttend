@@ -1,3 +1,4 @@
+// index.jsx
 import {
   View,
   FlatList,
@@ -5,7 +6,6 @@ import {
   Text,
   TouchableOpacity,
   Image,
-  ActivityIndicator,
   BackHandler,
 } from "react-native";
 import { useUser, useAuth } from "@clerk/clerk-expo";
@@ -21,41 +21,30 @@ export default function App() {
   const router = useRouter();
   const { user } = useUser();
   const { isLoaded, isSignedIn } = useAuth();
-  const {
-    classes,
-    loading,
-    initialLoading,
-    error,
-    isRetrying,
-    retryAttempt,
-    retryMessage,
-    fetchUserClasses,
-  } = useClasses();
 
+  const { classes, loading, initialLoading, error, fetchUserClasses } =
+    useClasses();
+
+  // Hook สำหรับดึงข้อมูล
   useFocusEffect(
     useCallback(() => {
       if (isLoaded && isSignedIn && user) {
         fetchUserClasses();
       }
-    }, [isLoaded, isSignedIn, user, fetchUserClasses])
+    }, [isLoaded, isSignedIn, user])
   );
 
   // Hook สำหรับจัดการปุ่ม Back
   useFocusEffect(
     useCallback(() => {
       const onBackPress = () => {
-        // เมื่ออยู่ที่หน้าหลัก (index) ให้ทำการออกจากแอป
         BackHandler.exitApp();
         return true;
       };
-
-      // เพิ่ม Event Listener เมื่อหน้าจอนี้ถูก focus
       const subscription = BackHandler.addEventListener(
         "hardwareBackPress",
         onBackPress
       );
-
-      // คืนค่าฟังก์ชันสำหรับลบ Listener ออกเมื่อออกจากหน้าจอนี้
       return () => subscription.remove();
     }, [])
   );
@@ -64,36 +53,20 @@ export default function App() {
     return <Loading />;
   }
 
-  if (isRetrying) {
-    return (
-      <View className="flex-1 justify-center items-center bg-[#121212]">
-        <ActivityIndicator size="large" color="#ffffff" />
-        <Text className="text-white mt-4 text-base">{retryMessage}</Text>
-        <Text className="text-gray-400 text-2xl mt-2 text-center">
-          ●{"●".repeat(retryAttempt)}
-          {"○".repeat(2 - retryAttempt)}
-        </Text>
-      </View>
-    );
-  }
-
   if (error) {
-    const isServerError =
-      typeof error.response?.data === "string" &&
-      error.response.data.includes("<!DOCTYPE html>");
-
     return (
       <View className="flex-1 justify-center items-center bg-[#121212] px-4">
-        <Text className="text-red-400 text-center text-base mb-4">
-          {isServerError
-            ? "ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้"
-            : "เกิดข้อผิดพลาดในการโหลดข้อมูล"}
+        <Text className="text-red-400 text-center text-lg mb-4">
+          เกิดข้อผิดพลาดในการโหลดข้อมูล
+        </Text>
+        <Text className="text-gray-400 text-center text-sm mb-6">
+          กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ตของคุณ
         </Text>
         <TouchableOpacity
-          onPress={() => fetchUserClasses()}
+          onPress={() => fetchUserClasses()} // การกดปุ่มนี้จะเริ่มกระบวนการ Retry อัตโนมัติใหม่
           className="bg-blue-500 px-6 py-3 rounded-lg"
         >
-          <Text className="text-white font-semibold">ลองใหม่อีกครั้ง</Text>
+          <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
         </TouchableOpacity>
       </View>
     );
@@ -124,6 +97,7 @@ export default function App() {
 
       {/* BODY */}
       {classes.length === 0 ? (
+        // ตอนนี้เงื่อนไขนี้จะทำงานเฉพาะเมื่อโหลดเสร็จสมบูรณ์และไม่มีคลาสจริงๆ
         <View className="flex-1 justify-center items-center">
           <Text className="text-gray-500 text-center text-base">
             ยังไม่มีชั้นเรียน
@@ -139,7 +113,7 @@ export default function App() {
           refreshControl={
             <RefreshControl
               refreshing={loading}
-              onRefresh={() => fetchUserClasses({ isRefresh: true })}
+              onRefresh={fetchUserClasses}
               tintColor="#ffffff"
             />
           }

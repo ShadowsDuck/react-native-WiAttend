@@ -1,12 +1,5 @@
 // HomePage.js
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Alert,
-  AppState,
-} from "react-native";
+import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState, useEffect } from "react";
 import { Book1, User, Key, CopySuccess } from "iconsax-react-native";
@@ -50,8 +43,14 @@ const HomePage = () => {
       if (class_id) {
         fetchClassById(class_id);
       }
-    }, [class_id, fetchClassById])
+    }, [class_id])
   );
+
+  const handleRetry = () => {
+    if (class_id) {
+      fetchClassById(class_id);
+    }
+  };
 
   const copyToClipboard = async () => {
     if (isCopied) return;
@@ -74,32 +73,24 @@ const HomePage = () => {
     }
   };
 
-  const handleRetry = () => {
-    if (class_id) {
-      fetchClassById(class_id);
-    }
-  };
-
   // --- การจัดการ UI ตาม State ---
-  // if (!class_id) {
-  //   return (
-  //     <View className="flex-1 bg-[#121212]">
-  //       <Header backgroundColor="#252525" />
-  //       <View className="flex-1 justify-center items-center">
-  //         <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
-  //       </View>
-  //     </View>
-  //   );
-  // }
+  if (!class_id) {
+    return (
+      <View className="flex-1 bg-[#121212]">
+        <Header backgroundColor="#252525" />
+        <View className="flex-1 justify-center items-center">
+          <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
+        </View>
+      </View>
+    );
+  }
 
-  // แสดง Loading เมื่อ:
-  // 1. ยังไม่เคย initialize (ครั้งแรก)
-  // 2. กำลัง loading และยังไม่มีข้อมูลเก่า
-  if (!hasInitialized || (loading && !classData)) {
+  // แสดง Loading เมื่อ: ยังไม่ initialize หรือกำลัง loading (ไม่ว่าจะมีข้อมูลเก่าหรือไม่)
+  if (!hasInitialized || loading) {
     return <Loading />;
   }
 
-  // แสดง Error เมื่อ: มี error หรือไม่มีข้อมูล (หลังจาก initialize แล้ว)
+  // แสดง Error เมื่อ: มี error หรือไม่มีข้อมูล (หลังจาก initialize แล้วและไม่ได้กำลัง loading)
   if (error || !classData?.classDetail) {
     return (
       <View className="flex-1 bg-[#121212]">
