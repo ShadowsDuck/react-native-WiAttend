@@ -2,7 +2,7 @@ import axios from "axios";
 import { useState, useCallback } from "react";
 import { Alert } from "react-native";
 import { useAuth } from "@clerk/clerk-expo";
-import { API_URL } from "../constants/api.js";
+import API_URL from "../config/api";
 
 export const useUserProfile = () => {
   const { getToken } = useAuth();

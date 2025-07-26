@@ -5,6 +5,8 @@ import {
   createClass,
   joinClass,
   getClassById,
+  updateClassById,
+  deleteClassById,
 } from "../controllers/class.controller.js";
 
 const router = express.Router();
@@ -16,6 +18,7 @@ router.get("/", requireAuth(), getUserClasses);
 router.post("/", requireAuth(), createClass);
 router.post("/join", requireAuth(), joinClass);
 router.get("/:classId", requireAuth(), getClassById);
-// router.put("/profile/editProfile", requireAuth(), updateUserProfile);
+router.put("/:classId", requireAuth(), updateClassById);
+router.delete("/:classId", requireAuth(), deleteClassById);
 
 export default router;

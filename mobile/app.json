@@ -22,6 +22,8 @@
       "edgeToEdgeEnabled": true,
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_WIFI_STATE"
       ],
       "package": "com.shadowsduck.mobile"
@@ -52,6 +54,12 @@
       "eas": {
         "projectId": "aef3546e-e51a-4b43-8d69-f5aab938d2cd"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/aef3546e-e51a-4b43-8d69-f5aab938d2cd"
     }
   }
 }

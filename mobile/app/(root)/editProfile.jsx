@@ -110,11 +110,17 @@ const EditProfile = () => {
           <Text className="text-base text-white">
             กรุณากรอกข้อมูลโปรไฟล์ของคุณ
           </Text>
+
+          <Input
+            label="รหัสนิสิต"
+            value={formData.studentId}
+            onChangeText={(value) =>
+              setFormData({ ...formData, studentId: value })
+            }
+            keyboardType="numeric"
+          />
+
           {[
-            {
-              key: "studentId",
-              label: "รหัสนิสิต",
-            },
             {
               key: "firstName",
               label: "ชื่อจริง",
