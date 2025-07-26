@@ -3,14 +3,14 @@ import { useRouter } from "expo-router";
 import Input from "../../components/Input";
 import { useState } from "react";
 import DatePicker from "../../components/DatePicker";
-import { useClassroom } from "../../hooks/useClassroom";
+import { useClasses } from "../../hooks/useClasses";
 import Loading from "../../components/Loading";
 import Header from "../../components/Header";
 
 const CreateClassroom = () => {
   const router = useRouter();
 
-  const { loading, createClassroom } = useClassroom();
+  const { loading, createClass } = useClasses();
 
   const [subjectName, setSubjectName] = useState("");
   const [semesterStartDate, setSemesterStartDate] = useState("");
@@ -27,7 +27,7 @@ const CreateClassroom = () => {
         return;
       }
 
-      await createClassroom({
+      await createClass({
         subject_name: subjectName.trim(),
         semester_start_date: semesterStartDate.trim(),
         semester_weeks: semesterWeeks.trim(),
@@ -75,6 +75,7 @@ const CreateClassroom = () => {
             label="ระยะเวลาการสอน (สัปดาห์)"
             value={semesterWeeks}
             onChangeText={setSemesterWeeks}
+            keyboardType="numeric"
           />
         </View>
       </ScrollView>
