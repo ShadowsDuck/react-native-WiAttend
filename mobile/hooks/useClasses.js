@@ -9,11 +9,10 @@ export const useClasses = () => {
   const { user } = useUser();
 
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [error, setError] = useState(null);
   const [classes, setClasses] = useState([]);
   const [classData, setClassData] = useState(null);
-  const [hasInitialized, setHasInitialized] = useState(false);
 
   const createClass = useCallback(
     async (data) => {
@@ -53,7 +52,7 @@ export const useClasses = () => {
     async (options = {}) => {
       const { retryCount = 0 } = options;
       if (!user) {
-        setInitialLoading(false);
+        setHasInitialized(true);
         return;
       }
 
@@ -68,8 +67,8 @@ export const useClasses = () => {
         });
 
         setClasses(res.data || []);
-        // โหลดสำเร็จ - เปลี่ยน initialLoading เป็น false
-        setInitialLoading(false);
+        // โหลดสำเร็จ - เปลี่ยน hasInitialized เป็น true
+        setHasInitialized(true);
       } catch (error) {
         const isServerNotReady =
           typeof error.response?.data === "string" &&
@@ -80,7 +79,7 @@ export const useClasses = () => {
             `🔄 Server not ready, retrying... (Attempt ${retryCount + 1})`
           );
           const waitTime = (retryCount + 1) * 1500;
-          // ไม่เปลี่ยน initialLoading ตรงนี้ ให้ยังคง loading ต่อไป
+          // ไม่เปลี่ยน hasInitialized ตรงนี้ ให้ยังคง loading ต่อไป
           setTimeout(
             () => fetchUserClasses({ retryCount: retryCount + 1 }),
             waitTime
@@ -93,8 +92,8 @@ export const useClasses = () => {
           error.response?.data || error.message
         );
         setError(error);
-        // retry หมดแล้ว หรือ error อื่นๆ - เปลี่ยน initialLoading เป็น false
-        setInitialLoading(false);
+        // retry หมดแล้ว หรือ error อื่นๆ - เปลี่ยน hasInitialized เป็น true
+        setHasInitialized(true);
       } finally {
         setLoading(false);
       }
@@ -275,11 +274,10 @@ export const useClasses = () => {
 
   return {
     loading,
-    initialLoading,
+    hasInitialized,
     error,
     classes,
     classData,
-    hasInitialized,
     createClass,
     fetchUserClasses,
     fetchClassById,

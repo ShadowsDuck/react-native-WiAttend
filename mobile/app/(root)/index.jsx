@@ -22,7 +22,7 @@ export default function App() {
   const { user } = useUser();
   const { isLoaded, isSignedIn } = useAuth();
 
-  const { classes, loading, initialLoading, error, fetchUserClasses } =
+  const { classes, loading, hasInitialized, error, fetchUserClasses } =
     useClasses();
 
   // Hook สำหรับดึงข้อมูล
@@ -49,7 +49,7 @@ export default function App() {
     }, [])
   );
 
-  if (!isLoaded || initialLoading) {
+  if (!isLoaded || !hasInitialized) {
     return <Loading />;
   }
 
