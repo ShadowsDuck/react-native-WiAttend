@@ -1,16 +1,7 @@
 import { db } from "../config/db.js";
-import {
-  classes,
-  user_classes,
-  users,
-  schedules,
-  rooms,
-  wifi_access_points,
-  class_sessions,
-  attendances,
-} from "../db/schema.js";
+import { schedules, class_sessions, attendances } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
-import { eq, sql, or, asc, and, inArray } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
 
 export async function checkin(req, res) {

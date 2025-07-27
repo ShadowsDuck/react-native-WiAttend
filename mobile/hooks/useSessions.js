@@ -1,14 +1,11 @@
 import axios from "axios";
-import { useCallback, useState } from "react";
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useState } from "react";
+import { useAuth } from "@clerk/clerk-expo";
 import API_URL from "../config/api";
 
 export const useSessions = () => {
   const { getToken } = useAuth();
-  const { user } = useUser();
 
-  // const [classrooms, setClassrooms] = useState([]);
-  // const [classInfo, setClassInfo] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const checkin = async (sessionId, scannedWifiData) => {

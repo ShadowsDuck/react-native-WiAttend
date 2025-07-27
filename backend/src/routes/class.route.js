@@ -8,7 +8,7 @@ import {
   updateClassById,
   deleteClassById,
 } from "../controllers/class.controller.js";
-import { createSchedule } from "../controllers/schedules.controller.js";
+import { createScheduleAndSessions } from "../controllers/schedules.controller.js";
 
 const router = express.Router();
 
@@ -22,6 +22,6 @@ router.get("/:classId", requireAuth(), getClassById);
 router.put("/:classId", requireAuth(), updateClassById);
 router.delete("/:classId", requireAuth(), deleteClassById);
 
-router.post("/:classId/schedules", requireAuth(), createSchedule);
+router.post("/:classId/schedules", requireAuth(), createScheduleAndSessions);
 
 export default router;
