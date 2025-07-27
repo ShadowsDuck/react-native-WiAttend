@@ -97,11 +97,9 @@ export async function checkin(req, res) {
 
     // 4. ถ้าหลังจากวนเช็คทั้งหมดแล้วยังไม่มีตัวไหนตรงเงื่อนไขเลย -> ปฏิเสธ
     if (!isLocationVerified) {
-      return res
-        .status(400)
-        .json({
-          message: "คุณไม่ได้อยู่บริเวณห้องเรียน หรือสัญญาณ Wi-Fi อ่อนเกินไป",
-        });
+      return res.status(400).json({
+        message: "คุณไม่ได้อยู่บริเวณห้องเรียน หรือสัญญาณ Wi-Fi อ่อนเกินไป",
+      });
     }
 
     // เช็คชื่อไปหรือยัง
@@ -153,7 +151,7 @@ export async function checkin(req, res) {
 
     return res.status(201).json({ message: "Check-in successful" });
   } catch (error) {
-    console.error("Error creating the user", error);
+    console.error("Error check-in", error);
     res.status(500).json({ message: "Internal server Error" });
   }
 }

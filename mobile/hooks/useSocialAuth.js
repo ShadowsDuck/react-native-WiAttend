@@ -38,24 +38,25 @@ export const useSocialAuth = () => {
 
       if (createdSessionId && setActive) {
         await setActive({ session: createdSessionId });
-        const user = await createUserProfile();
-        return user;
+
+        try {
+          const user = await createUserProfile();
+          return user;
+        } catch (profileError) {
+          // ถ้า profile error แต่ login สำเร็จแล้ว - ให้ผ่านไป
+          console.log(
+            "Profile creation failed but login successful:",
+            profileError
+          );
+          return { message: "Login successful" };
+        }
       }
     } catch (error) {
-      if (
-        error.response &&
-        error.response.status === 400 &&
-        error.response.data?.message === "User already exists"
-      ) {
-        console.log("User already exists, login successful.");
-        return { message: "Login successful" };
-      } else {
-        console.log("Error in social auth", error);
-        Alert.alert(
-          "เกิดข้อผิดพลาด",
-          "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
-        );
-      }
+      console.log("Error in social auth", error);
+      Alert.alert(
+        "เกิดข้อผิดพลาด",
+        "ไม่สามารถเข้าสู่ระบบได้ กรุณาลองใหม่อีกครั้ง"
+      );
     } finally {
       setIsLoading(false);
     }

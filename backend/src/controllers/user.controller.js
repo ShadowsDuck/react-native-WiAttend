@@ -31,26 +31,36 @@ export async function upsertUserProfile(req, res) {
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    // เช็คว่า user มีอยู่แล้วหรือไม่
     let user = await db.query.users.findFirst({
       where: (users, { eq }) => eq(users.user_id, userId),
     });
 
-    // ถ้า user ยังไม่มีในระบบของเรา ให้สร้างใหม่
     if (!user) {
       console.log(`User ${userId} not found. Creating new profile.`);
-      const newUser = await db
-        .insert(users)
-        .values({ user_id: userId })
-        .returning();
-      user = newUser[0];
-      // ส่ง status 201 Created สำหรับการสร้างใหม่
-      return res.status(201).json(user);
+
+      try {
+        const newUser = await db
+          .insert(users)
+          .values({ user_id: userId })
+          .returning();
+        user = newUser[0];
+        return res.status(201).json(user);
+      } catch (insertError) {
+        // Handle duplicate key error
+        if (insertError.code === "23505" || insertError.constraint) {
+          console.log(`User ${userId} created by another process. Fetching...`);
+          user = await db.query.users.findFirst({
+            where: (users, { eq }) => eq(users.user_id, userId),
+          });
+          if (user) {
+            return res.status(200).json(user);
+          }
+        }
+        throw insertError;
+      }
     }
 
-    // ถ้า user มีอยู่แล้ว ก็แค่ส่งข้อมูลเดิมกลับไป
     console.log(`User ${userId} already exists. Returning profile.`);
-    // ส่ง status 200 OK สำหรับการดึงข้อมูลสำเร็จ
     return res.status(200).json(user);
   } catch (error) {
     console.error("Error in upsertUserProfile", error);

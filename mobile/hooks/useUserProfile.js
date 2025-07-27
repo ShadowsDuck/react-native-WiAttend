@@ -41,8 +41,19 @@ export const useUserProfile = () => {
       );
       return res.data;
     } catch (error) {
-      console.error("❌ Error creating user:", error.response?.data || error);
-      throw error;
+      // console.error("❌ Error creating user:", error.response?.data || error);
+
+      // ถ้าเป็น duplicate key หรือ user มีอยู่แล้ว - ไม่ต้อง throw
+      if (
+        error.response?.status === 409 ||
+        error.response?.status === 400 ||
+        error.response?.data?.message?.includes("already exists")
+      ) {
+        console.log("User already exists, continuing...");
+        return { message: "User exists" };
+      }
+
+      throw error; // throw เฉพาะ error จริงๆ
     }
   };
 
