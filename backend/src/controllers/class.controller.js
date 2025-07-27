@@ -18,10 +18,6 @@ export async function getUserClasses(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     // --- Query หลัก: ดึงข้อมูลคลาสทั้งหมดในครั้งเดียว ---
     const userClasses = await db
       .select({
@@ -100,10 +96,6 @@ export async function createClass(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     const { subject_name, semester_start_date, semester_weeks } = req.body;
 
     const join_code = await generateUniqueJoinCode();
@@ -137,10 +129,6 @@ export async function createClass(req, res) {
 export async function joinClass(req, res) {
   try {
     const { userId } = getAuth(req);
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
     const { join_code } = req.body;
 
@@ -318,10 +306,6 @@ export async function updateClassById(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     const { classId } = req.params;
 
     // ตรวจสอบว่าคลาสมีอยู่จริงหรือไม่
@@ -394,10 +378,6 @@ export async function updateClassById(req, res) {
 export async function deleteClassById(req, res) {
   try {
     const { userId } = getAuth(req);
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
     const { classId } = req.params;
 

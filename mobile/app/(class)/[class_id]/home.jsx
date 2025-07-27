@@ -221,10 +221,10 @@ const HomePage = () => {
             scheduleCount={classSchedules?.length || 0}
             isOwner={currentUserStatus?.isOwner}
             onAddSchedule={() =>
-              Alert.alert(
-                "Coming Soon!",
-                "ฟังก์ชันเพิ่มตารางเรียนยังไม่เปิดใช้งาน"
-              )
+              router.push({
+                pathname: "/(schedule)/createSchedule",
+                params: { class_id: class_id },
+              })
             }
           />
 

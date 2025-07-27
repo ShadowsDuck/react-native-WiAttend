@@ -8,6 +8,7 @@ import {
   updateClassById,
   deleteClassById,
 } from "../controllers/class.controller.js";
+import { createSchedule } from "../controllers/schedules.controller.js";
 
 const router = express.Router();
 
@@ -20,5 +21,7 @@ router.post("/join", requireAuth(), joinClass);
 router.get("/:classId", requireAuth(), getClassById);
 router.put("/:classId", requireAuth(), updateClassById);
 router.delete("/:classId", requireAuth(), deleteClassById);
+
+router.post("/:classId/schedules", requireAuth(), createSchedule);
 
 export default router;

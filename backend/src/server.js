@@ -4,6 +4,8 @@ import { clerkMiddleware } from "@clerk/express";
 import userRoutes from "./routes/user.route.js";
 import classRoutes from "./routes/class.route.js";
 import sessionsRoutes from "./routes/sessions.route.js";
+import schedulesRoutes from "./routes/schedules.route.js";
+import roomRoutes from "./routes/rooms.route.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -21,6 +23,8 @@ app.use("/api/health", (req, res) => {
 app.use("/api/users", userRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/sessions", sessionsRoutes);
+app.use("/api/schedules", schedulesRoutes);
+app.use("/api/rooms", roomRoutes);
 
 // error handling middleware
 app.use((err, req, res, next) => {
