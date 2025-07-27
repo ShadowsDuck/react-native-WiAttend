@@ -4,8 +4,6 @@ import {
   user_classes,
   users,
   schedules,
-  rooms,
-  wifi_access_points,
   class_sessions,
   attendances,
 } from "../db/schema.js";
@@ -13,6 +11,8 @@ import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
 import { eq, sql, or, asc, and, inArray } from "drizzle-orm";
 import { processSessionStatuses } from "../utils/session.js";
+import { add } from "date-fns";
+import { dayMapping } from "../utils/dayMapping.js";
 
 export async function getUserClasses(req, res) {
   try {
@@ -303,29 +303,31 @@ export async function getClassById(req, res) {
 }
 
 export async function updateClassById(req, res) {
+  // ตัวแปรสำหรับ Backup ข้อมูลเก่า
+  let originalClassData = null;
+  let originalSessionsData = [];
+
   try {
     const { userId } = getAuth(req);
-
     const { classId } = req.params;
 
-    // ตรวจสอบว่าคลาสมีอยู่จริงหรือไม่
-    const existingClass = await db.query.classes.findFirst({
-      where: (classes, { eq }) => eq(classes.class_id, classId),
-    });
+    // --- ส่วนที่ 1: ตรวจสอบสิทธิ์และข้อมูลนำเข้า ---
+    const { subject_name, semester_start_date, semester_weeks } = req.body;
+    const needsSessionRecreation =
+      semester_start_date !== undefined || semester_weeks !== undefined;
 
+    const existingClass = await db.query.classes.findFirst({
+      where: eq(classes.class_id, classId),
+    });
     if (!existingClass) {
       return res.status(404).json({ message: "Class not found" });
     }
-
-    // ตรวจสอบสิทธิ์ความเป็นเจ้าของ
     if (existingClass.owner_user_id !== userId) {
       return res
         .status(403)
         .json({ message: "You are not the owner of this class" });
     }
 
-    // Partial Update และเพิ่มการ Validation
-    const { subject_name, semester_start_date, semester_weeks } = req.body;
     const dataToUpdate = {};
 
     if (subject_name !== undefined) {
@@ -360,18 +362,128 @@ export async function updateClassById(req, res) {
       return res.status(400).json({ message: "No fields provided to update" });
     }
 
-    // อัปเดตและส่งข้อมูลล่าสุดกลับไป
-    const updatedClasses = await db
-      .update(classes)
-      .set(dataToUpdate) // ใช้ Object ที่สร้างแบบไดนามิก
-      .where(eq(classes.class_id, classId))
-      .returning(); // สั่งให้ DB คืนค่าแถวที่อัปเดตแล้วกลับมา
+    // --- ส่วนที่ 2: เริ่มกระบวนการที่อาจต้อง Rollback ---
+    // 2.1 Backup ข้อมูลเก่า ถ้าจำเป็นต้องสร้าง Session ใหม่
+    if (needsSessionRecreation) {
+      originalClassData = { ...existingClass }; // Copy ข้อมูลคลาสเก่าไว้
+      const allSchedules = await db.query.schedules.findMany({
+        where: eq(schedules.class_id, classId),
+      });
+      if (allSchedules.length > 0) {
+        const scheduleIds = allSchedules.map((s) => s.schedule_id);
+        originalSessionsData = await db.query.class_sessions.findMany({
+          where: inArray(class_sessions.schedule_id, scheduleIds),
+        });
+      }
+    }
 
-    // ส่งข้อมูลคลาสที่อัปเดตแล้วกลับไปใน response
-    res.status(200).json(updatedClasses[0]);
+    // 2.2 อัปเดตตาราง classes ก่อน
+    const updatedClassArray = await db
+      .update(classes)
+      .set(dataToUpdate)
+      .where(eq(classes.class_id, classId))
+      .returning();
+    const updatedClass = updatedClassArray[0];
+
+    // 2.3 ถ้าต้องสร้าง Session ใหม่ ให้ทำที่นี่
+    if (needsSessionRecreation) {
+      console.log(`Recreating sessions for class ID: ${classId}`);
+      const allSchedules = await db.query.schedules.findMany({
+        where: eq(schedules.class_id, classId),
+      });
+
+      if (allSchedules.length > 0) {
+        // ลบของเก่า
+        const scheduleIds = allSchedules.map((s) => s.schedule_id);
+        await db
+          .delete(class_sessions)
+          .where(inArray(class_sessions.schedule_id, scheduleIds));
+
+        // สร้างของใหม่
+        const allNewSessionsToInsert = [];
+        for (const schedule of allSchedules) {
+          const startDate = new Date(updatedClass.semester_start_date);
+          const dayIndex = dayMapping[schedule.day_of_week.toLowerCase()];
+          // ใช้ Logic การคำนวณวันที่ที่ถูกต้องจากครั้งก่อน
+          let firstSessionDate = new Date(startDate);
+          firstSessionDate.setUTCHours(0, 0, 0, 0);
+          while (firstSessionDate.getDay() !== dayIndex) {
+            firstSessionDate = add(firstSessionDate, { days: 1 });
+          }
+          for (let week = 0; week < updatedClass.semester_weeks; week++) {
+            const sessionDate = add(firstSessionDate, { weeks: week });
+            allNewSessionsToInsert.push({
+              schedule_id: schedule.schedule_id,
+              class_id: classId,
+              session_date: sessionDate,
+              is_canceled: false,
+            });
+          }
+        }
+        if (allNewSessionsToInsert.length > 0) {
+          // ถ้าการ insert นี้ล้มเหลว จะโยน Error เข้า catch block
+          await db.insert(class_sessions).values(allNewSessionsToInsert);
+        }
+      }
+    }
+
+    // ถ้าทุกอย่างสำเร็จ
+    return res.status(200).json(updatedClass);
   } catch (error) {
-    console.error("Error updating the class:", error); // เพิ่มรายละเอียดใน log
-    res.status(500).json({ message: "Internal Server Error" });
+    // --- ส่วนที่ 3: จัดการ Error และทำการ Rollback ด้วยตัวเอง ---
+    console.error(
+      "An error occurred during the update process:",
+      error.message
+    );
+
+    // ถ้า `originalClassData` มีค่า (หมายถึงเราอยู่ในกระบวนการที่ต้อง Rollback)
+    if (originalClassData) {
+      console.log(
+        `Attempting to restore data for class ID: ${originalClassData.class_id}`
+      );
+      try {
+        // 3.1 Restore ข้อมูลคลาสกลับไปเป็นเหมือนเดิม
+        await db
+          .update(classes)
+          .set({
+            subject_name: originalClassData.subject_name,
+            semester_start_date: originalClassData.semester_start_date,
+            semester_weeks: originalClassData.semester_weeks,
+          })
+          .where(eq(classes.class_id, originalClassData.class_id));
+
+        // 3.2 ลบ session ที่อาจจะถูกสร้างไปแล้ว (ถ้ามี)
+        const allSchedules = await db.query.schedules.findMany({
+          where: eq(schedules.class_id, originalClassData.class_id),
+        });
+        if (allSchedules.length > 0) {
+          const scheduleIds = allSchedules.map((s) => s.schedule_id);
+          await db
+            .delete(class_sessions)
+            .where(inArray(class_sessions.schedule_id, scheduleIds));
+        }
+
+        // 3.3 Restore session เก่ากลับเข้าไป
+        if (originalSessionsData.length > 0) {
+          // Drizzle ต้องการให้ลบค่าที่ DB สร้างเองออกไปก่อน insert
+          const restoredSessions = originalSessionsData.map(
+            ({ session_id, created_at, ...rest }) => rest
+          );
+          await db.insert(class_sessions).values(restoredSessions);
+        }
+        console.log("Data restoration successful.");
+      } catch (restoreError) {
+        console.error(
+          "FATAL: FAILED TO RESTORE DATA. Manual database cleanup required.",
+          restoreError
+        );
+      }
+    }
+
+    // ส่ง Response Error กลับไปให้ Frontend
+    return res.status(error.status || 500).json({
+      message: error.message || "An internal server error occurred.",
+    });
   }
 }
 
