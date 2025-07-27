@@ -27,10 +27,6 @@ export async function upsertUserProfile(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     let user = await db.query.users.findFirst({
       where: (users, { eq }) => eq(users.user_id, userId),
     });
@@ -71,10 +67,6 @@ export async function upsertUserProfile(req, res) {
 export async function updateUserProfile(req, res) {
   try {
     const { userId } = getAuth(req);
-
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
 
     // ตรวจสอบว่า user มีอยู่ใน db มั้ย
     const existingUser = await db.query.users.findFirst({

@@ -29,7 +29,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
           value={value}
           isFocused={isFocused}
           error={error}
-          offset={18}
+          offset={20}
           activeColor="#a8c6fc"
         />
         <Dropdown
@@ -40,8 +40,8 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
               borderColor: error
                 ? "#f87171"
                 : isFocused
-                ? "#a8c6fc"
-                : "rgba(255,255,255,0.20)",
+                  ? "#a8c6fc"
+                  : "rgba(255,255,255,0.20)",
             },
           ]}
           selectedTextStyle={styles.selectedTextStyle}
@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#121212",
     borderRadius: 11,
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 20,
     paddingLeft: 6,
     justifyContent: "center",
   },

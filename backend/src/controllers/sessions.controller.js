@@ -17,10 +17,6 @@ export async function checkin(req, res) {
   try {
     const { userId } = getAuth(req);
 
-    if (!userId) {
-      return res.status(401).json({ message: "Unauthorized" });
-    }
-
     const { sessionId } = req.params;
 
     const numericSessionId = parseInt(sessionId, 10);
