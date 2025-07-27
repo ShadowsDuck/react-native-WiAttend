@@ -4,8 +4,4 @@ import { requireAuth } from "@clerk/express";
 
 const router = express.Router();
 
-// public route
-
-// protected routes
-
 export default router;

@@ -13,30 +13,28 @@ const CreateSchedule = () => {
   const { class_id } = useLocalSearchParams();
   const router = useRouter();
 
-  const { loading, createSchedule } = useSchedule();
+  const { loading: isCreating, createSchedule } = useSchedule();
   const { rooms, loading: roomsLoading, fetchAllRooms } = useRooms();
 
   const [day_of_week, setDay_of_week] = useState("");
-  const [start_time, setStart_time] = useState("");
-  const [end_time, setEnd_time] = useState("");
+  const [start_time, setStart_time] = useState(null);
+  const [end_time, setEnd_time] = useState(null);
   const [checkin_close_after_min, setCheckin_close_after_min] = useState("");
   const [room_id, setRoom_id] = useState("");
 
   const handleCreate = async () => {
     try {
-      const checkinMinutes = parseInt(checkin_close_after_min?.trim(), 10);
-
-      if (!day_of_week || !start_time || !end_time || !room_id) {
+      if (
+        !day_of_week ||
+        !start_time ||
+        !end_time ||
+        !room_id ||
+        !checkin_close_after_min.trim()
+      ) {
         Alert.alert("สร้างคาบเรียน", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
         return;
       }
-      if (isNaN(checkinMinutes)) {
-        Alert.alert(
-          "ข้อมูลผิดพลาด",
-          "กรุณากรอก 'ปิดเช็คชื่อหลังจากเริ่มเรียนกี่นาที' เป็นตัวเลขเท่านั้น"
-        );
-        return;
-      }
+
       if (start_time >= end_time) {
         Alert.alert(
           "ข้อมูลผิดพลาด",
@@ -45,15 +43,27 @@ const CreateSchedule = () => {
         return;
       }
 
+      const checkinMinutes = parseInt(checkin_close_after_min.trim(), 10);
+      if (isNaN(checkinMinutes)) {
+        Alert.alert(
+          "ข้อมูลผิดพลาด",
+          "กรุณากรอก 'ปิดเช็คชื่อหลังจากเริ่มเรียน (นาที)' เป็นตัวเลขเท่านั้น"
+        );
+        return;
+      }
+
       await createSchedule(class_id, {
-        day_of_week: day_of_week.trim(),
-        start_time: start_time.trim(),
-        end_time: end_time.trim(),
+        day_of_week,
+        start_time,
+        end_time,
         checkin_close_after_min: checkinMinutes,
-        room_id: room_id.trim(),
+        room_id,
       });
 
-      Alert.alert("สร้างสำเร็จ", "สร้างคาบเรียนของคุณสำเร็จแล้ว");
+      Alert.alert(
+        "สร้างสำเร็จ",
+        "สร้างคาบเรียนและกำหนดการทั้งหมดเรียบร้อยแล้ว"
+      );
       router.back();
     } catch (error) {
       console.error(
@@ -62,15 +72,9 @@ const CreateSchedule = () => {
       );
 
       if (error.response && error.response.status === 409) {
-        Alert.alert(
-          "ตารางเรียนซ้อน",
-          error.response.data.message || "ตรวจพบความขัดแย้งของกำหนดการ"
-        );
+        Alert.alert("ตารางเรียนซ้อน", error.response.data.message);
       } else if (error.response && error.response.status === 400) {
-        Alert.alert(
-          "ข้อมูลไม่ถูกต้อง",
-          error.response.data.message || "กรุณาตรวจสอบข้อมูลที่กรอกอีกครั้ง"
-        );
+        Alert.alert("ข้อมูลไม่ถูกต้อง", error.response.data.message);
       } else {
         Alert.alert(
           "เกิดข้อผิดพลาด",
@@ -84,7 +88,7 @@ const CreateSchedule = () => {
     fetchAllRooms();
   }, []);
 
-  if (loading) return <Loading />;
+  if (isCreating) return <Loading />;
 
   return (
     <View className="flex-1 bg-[#121212]">
