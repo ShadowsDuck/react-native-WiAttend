@@ -108,7 +108,6 @@ export default function App() {
           data={classes}
           renderItem={({ item }) => <ClassCard item={item} />}
           keyExtractor={(item) => item.class_id.toString()}
-          className="px-4"
           contentContainerStyle={{ paddingBottom: 120 }}
           refreshControl={
             <RefreshControl
@@ -118,7 +117,7 @@ export default function App() {
             />
           }
           ListHeaderComponent={() => (
-            <Text className="text-gray-500 text-sm mb-2 mt-4 px-2">
+            <Text className="text-gray-500 text-sm mb-2 mt-2 px-5">
               ชั้นเรียนที่คุณเข้าร่วม
             </Text>
           )}

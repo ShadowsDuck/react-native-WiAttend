@@ -124,7 +124,7 @@ export const useClasses = () => {
           typeof error.response?.data === "string" &&
           error.response.data.includes("<!DOCTYPE html>");
 
-        if (isServerNotReady && retryCount < 2) {
+        if (isServerNotReady && retryCount < 3) {
           console.log(
             `🔄 Retrying fetchClassById... (Attempt ${retryCount + 1})`
           );
