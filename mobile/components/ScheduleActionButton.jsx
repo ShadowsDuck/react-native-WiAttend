@@ -60,8 +60,8 @@ const ScheduleActionButton = ({
         {status === "expired" && (
           <CheckButton
             disabled={true}
-            buttonStyle="rounded-lg py-3 mt-2 bg-red-800/50"
-            textStyle="text-red-400 text-center font-bold text-base"
+            buttonStyle="rounded-lg py-3 mt-2 bg-red-500/20 border border-red-500/30"
+            textStyle="text-red-400 text-center font-semibold text-sm"
             text="หมดเวลาเช็คชื่อ"
           />
         )}
@@ -69,8 +69,8 @@ const ScheduleActionButton = ({
         {status !== "active" && status !== "expired" && (
           <CheckButton
             disabled={true}
-            buttonStyle="rounded-lg py-3 mt-2 bg-gray-600/50"
-            textStyle="text-white text-center font-semibold text-base"
+            buttonStyle="rounded-lg py-3 mt-2 bg-gray-500/20 border border-gray-500/30"
+            textStyle="text-gray-400 text-center font-semibold text-sm"
             text="ยังไม่ถึงเวลาเช็คชื่อ"
           />
         )}
@@ -83,8 +83,8 @@ const ScheduleActionButton = ({
     return (
       <CheckButton
         disabled={true}
-        buttonStyle="rounded-lg py-2.5 mt-4 bg-blue-600/50"
-        textStyle="text-white text-center font-semibold text-base"
+        buttonStyle="rounded-lg py-2.5 mt-4 bg-blue-500/20 border border-blue-500/30"
+        textStyle="text-blue-400 font-semibold text-center text-sm"
         text="เช็คชื่อสำเร็จ"
       />
     );
@@ -104,8 +104,8 @@ const ScheduleActionButton = ({
     return (
       <CheckButton
         disabled={true}
-        buttonStyle="rounded-lg py-3 mt-2 bg-red-800/50"
-        textStyle="text-red-400 text-center font-bold text-base"
+        buttonStyle="rounded-lg py-3 mt-2 bg-red-500/20 border border-red-500/30"
+        textStyle="text-red-400 font-semibold text-center text-sm"
         text="หมดเวลาเช็คชื่อ"
       />
     );
@@ -115,8 +115,8 @@ const ScheduleActionButton = ({
   return (
     <CheckButton
       disabled={true}
-      buttonStyle="rounded-lg py-3 mt-2 bg-gray-600/50"
-      textStyle="text-white text-center font-semibold text-base"
+      buttonStyle="rounded-lg py-3 mt-2 bg-gray-500/20 border border-gray-500/30"
+      textStyle="text-gray-400 text-center font-semibold text-sm"
       text="ยังไม่ถึงเวลาเช็คชื่อ"
     />
   );

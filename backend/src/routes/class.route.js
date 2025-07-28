@@ -7,6 +7,7 @@ import {
   getClassById,
   updateClassById,
   deleteClassById,
+  getAllSessionsByClassId,
 } from "../controllers/class.controller.js";
 import { createScheduleAndSessions } from "../controllers/schedules.controller.js";
 
@@ -23,5 +24,6 @@ router.put("/:classId", requireAuth(), updateClassById);
 router.delete("/:classId", requireAuth(), deleteClassById);
 
 router.post("/:classId/schedules", requireAuth(), createScheduleAndSessions);
+router.get("/:classId/sessions", requireAuth(), getAllSessionsByClassId);
 
 export default router;
