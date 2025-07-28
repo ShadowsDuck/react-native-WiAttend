@@ -32,7 +32,7 @@ const CreateSchedule = () => {
         !room_id ||
         !checkin_close_after_min.trim()
       ) {
-        Alert.alert("สร้างคาบเรียน", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
+        Alert.alert("สร้างตารางเรียน", "กรุณากรอกข้อมูลให้ครบทุกช่อง");
         return;
       }
 
@@ -63,7 +63,7 @@ const CreateSchedule = () => {
 
       Alert.alert(
         "สร้างสำเร็จ",
-        "สร้างคาบเรียนและกำหนดการทั้งหมดเรียบร้อยแล้ว"
+        "สร้างตารางเรียนและคาบเรียนทั้งหมดเรียบร้อยแล้ว"
       );
       router.back();
     } catch (error) {
@@ -79,7 +79,7 @@ const CreateSchedule = () => {
       } else {
         Alert.alert(
           "เกิดข้อผิดพลาด",
-          "ไม่สามารถสร้างคาบเรียนได้ กรุณาลองใหม่อีกครั้ง"
+          "ไม่สามารถสร้างตารางเรียนได้ กรุณาลองใหม่อีกครั้ง"
         );
       }
     }
@@ -94,7 +94,7 @@ const CreateSchedule = () => {
   return (
     <View className="flex-1 bg-[#121212]">
       <Header
-        title="สร้างคาบเรียน"
+        title="สร้างตารางเรียน"
         backgroundColor="#252525"
         statusBarStyle="light"
         textButton="สร้าง"

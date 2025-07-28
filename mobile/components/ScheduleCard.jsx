@@ -1,9 +1,10 @@
 // components/ScheduleCard.js
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity } from "react-native";
 import { Clock, Location } from "iconsax-react-native";
-import { DAY_OF_WEEK_THAI } from "../constants/dayOfWeekThai";
+import { DAY_OF_WEEK_THAI } from "../utils/dayOfWeekThai";
 import ScheduleActionButton from "./ScheduleActionButton";
-import StatusBadge from "./StatusBadge";
+import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 
 const ScheduleCard = ({
   schedule,
@@ -12,7 +13,8 @@ const ScheduleCard = ({
   isCheckingIn,
   onCheckIn,
 }) => {
-  const status = todaySession?.status;
+  const router = useRouter();
+  const scheduleId = schedule?.schedule_id;
 
   return (
     <View className="bg-[#2C2C2C] rounded-xl p-4 px-5 mb-3">
@@ -22,7 +24,19 @@ const ScheduleCard = ({
           {DAY_OF_WEEK_THAI[schedule?.day_of_week.toLowerCase()] ||
             schedule?.day_of_week}
         </Text>
-        {!isOwner && <StatusBadge status={status} />}
+        {isOwner && (
+          <TouchableOpacity
+            className="border border-gray-600 p-2 rounded-full bg-gray-700/30 shadow-sm active:bg-gray-600/50"
+            onPress={() => {
+              router.push({
+                pathname: "/(schedule)/editSchedule",
+                params: { schedule_id: scheduleId },
+              });
+            }}
+          >
+            <Ionicons name="settings-outline" size={16} color="#E5E7EB" />
+          </TouchableOpacity>
+        )}
       </View>
 
       <View className="flex-row items-center mt-2">

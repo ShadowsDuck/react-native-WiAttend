@@ -1,8 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
 import { View, Text } from "react-native";
 
-const DisplayField = ({ label, value, iconName }) => (
-  <View>
+const DisplayField = ({ label, value, iconName, customStyle }) => (
+  <View className={customStyle}>
     <Text className="text-gray-400 text-sm mb-1">{label}</Text>
     <View className="flex-row items-center bg-[#2E2E2E] p-3 rounded-lg">
       <Ionicons name={iconName} size={20} color="#8A8A8E" className="mr-2" />
