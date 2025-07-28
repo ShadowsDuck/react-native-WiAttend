@@ -82,19 +82,19 @@ const HomePage = () => {
   };
 
   // --- การจัดการ UI ตาม State ---
-  if (!class_id) {
-    return (
-      <View className="flex-1 bg-[#121212]">
-        <Header backgroundColor="#121212" />
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
-        </View>
-      </View>
-    );
-  }
+  // if (!class_id) {
+  //   return (
+  //     <View className="flex-1 bg-[#121212]">
+  //       <Header backgroundColor="#121212" />
+  //       <View className="flex-1 justify-center items-center">
+  //         <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
   // แสดง Loading เมื่อ: ยังไม่ initialize หรือกำลัง loading (ไม่ว่าจะมีข้อมูลเก่าหรือไม่)
-  if (!hasInitialized || loading) {
+  if (!hasInitialized || loading || !class_id) {
     return <Loading />;
   }
 

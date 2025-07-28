@@ -1,11 +1,14 @@
 import { View, ScrollView, Alert } from "react-native";
 import { useRouter } from "expo-router";
-import Input from "../../components/Input";
 import { useState } from "react";
-import DatePicker from "../../components/DatePicker";
 import { useClasses } from "../../hooks/useClasses";
-import Loading from "../../components/Loading";
+
+// --- Components ---
 import Header from "../../components/Header";
+import Input from "../../components/Input";
+import DatePicker from "../../components/DatePicker";
+import Loading from "../../components/Loading";
+import InfoBox from "../../components/InfoBox";
 
 const CreateClassroom = () => {
   const router = useRouter();
@@ -78,6 +81,11 @@ const CreateClassroom = () => {
             keyboardType="numeric"
           />
         </View>
+
+        <InfoBox
+          text="โปรดตรวจสอบข้อมูลให้ถูกต้อง"
+          subText="เนื่องจาก “วันที่เริ่มต้นภาคเรียน” และ “ระยะเวลาการสอน” จะไม่สามารถแก้ไขได้ในภายหลัง"
+        />
       </ScrollView>
     </View>
   );

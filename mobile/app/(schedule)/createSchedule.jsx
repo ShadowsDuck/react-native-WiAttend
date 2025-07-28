@@ -8,6 +8,7 @@ import Header from "../../components/Header";
 import { useSchedule } from "../../hooks/useSchedule";
 import Dropdown from "../../components/Dropdown.jsx";
 import { useRooms } from "../../hooks/useRooms";
+import InfoBox from "../../components/InfoBox.jsx";
 
 const CreateSchedule = () => {
   const { class_id } = useLocalSearchParams();
@@ -151,6 +152,11 @@ const CreateSchedule = () => {
             disabled={roomsLoading}
           />
         </View>
+
+        <InfoBox
+          text="โปรดตรวจสอบข้อมูลให้ถูกต้อง"
+          subText="เนื่องจาก “วันที่สอน” จะไม่สามารถแก้ไขได้ในภายหลัง"
+        />
       </ScrollView>
     </View>
   );
