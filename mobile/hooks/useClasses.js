@@ -25,7 +25,7 @@ export const useClasses = () => {
           {
             subject_name: data.subject_name,
             semester_start_date: data.semester_start_date,
-            semester_weeks: parseInt(data.semester_weeks),
+            semester_weeks: data.semester_weeks,
           },
           {
             headers: {
