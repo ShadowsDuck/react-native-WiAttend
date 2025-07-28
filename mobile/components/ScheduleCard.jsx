@@ -3,6 +3,7 @@ import { View, Text } from "react-native";
 import { Clock, Location } from "iconsax-react-native";
 import { DAY_OF_WEEK_THAI } from "../constants/dayOfWeekThai";
 import ScheduleActionButton from "./ScheduleActionButton";
+import StatusBadge from "./StatusBadge";
 
 const ScheduleCard = ({
   schedule,
@@ -11,13 +12,19 @@ const ScheduleCard = ({
   isCheckingIn,
   onCheckIn,
 }) => {
+  const status = todaySession?.status;
+
   return (
-    <View className="bg-[#2C2C2C] rounded-xl p-4 mb-3">
-      <Text className="text-white text-lg font-bold mb-1">
-        วัน
-        {DAY_OF_WEEK_THAI[schedule?.day_of_week.toLowerCase()] ||
-          schedule?.day_of_week}
-      </Text>
+    <View className="bg-[#2C2C2C] rounded-xl p-4 px-5 mb-3">
+      <View className="flex-row justify-between items-center mb-3">
+        <Text className="text-white text-lg font-bold">
+          วัน
+          {DAY_OF_WEEK_THAI[schedule?.day_of_week.toLowerCase()] ||
+            schedule?.day_of_week}
+        </Text>
+        {!isOwner && <StatusBadge status={status} />}
+      </View>
+
       <View className="flex-row items-center mt-2">
         <Clock size="16" color="#9CA3AF" />
         <Text className="text-gray-300 text-sm ml-2">
