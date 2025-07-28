@@ -1,9 +1,9 @@
 import { db } from "../config/db.js";
-import { classes, schedules, class_sessions } from "../db/schema.js";
+import { classes, schedules, class_sessions, rooms } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { eq } from "drizzle-orm";
 import { formatInTimeZone } from "date-fns-tz";
-import { add, setDay } from "date-fns";
+import { add } from "date-fns";
 import { dayMapping } from "../utils/dayMapping.js";
 
 export async function createScheduleAndSessions(req, res) {
@@ -189,5 +189,169 @@ export async function createScheduleAndSessions(req, res) {
     return res.status(error.status || 500).json({
       message: error.message || "An internal server error occurred.",
     });
+  }
+}
+
+export async function getScheduleById(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { scheduleId } = req.params;
+
+    if (!scheduleId) {
+      return res.status(400).json({ message: "scheduleId is required" });
+    }
+
+    // ค้นหา schedule
+    const existingSchedule = await db.query.schedules.findFirst({
+      where: eq(schedules.schedule_id, scheduleId),
+    });
+
+    if (!existingSchedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    // ตรวจสอบว่า user นี้เป็นเจ้าของคลาส
+    const ownerResult = await db
+      .select({ owner_user_id: classes.owner_user_id })
+      .from(classes)
+      .where(eq(classes.class_id, existingSchedule.class_id))
+      .limit(1);
+
+    const ownerUserId = ownerResult[0]?.owner_user_id;
+
+    if (ownerUserId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    return res.status(200).json(existingSchedule);
+  } catch (error) {
+    console.error("❌ Error fetching schedule:", error.message);
+    return res
+      .status(error?.status || 500)
+      .json({ message: error?.message || "Internal server error" });
+  }
+}
+
+export async function updateScheduleById(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { scheduleId } = req.params;
+    const { start_time, end_time, checkin_close_after_min, room_id } = req.body;
+
+    // --- ส่วนที่ 1: ตรวจสอบสิทธิ์และข้อมูลนำเข้า ---
+    if (
+      start_time === undefined ||
+      end_time === undefined ||
+      checkin_close_after_min === undefined ||
+      room_id === undefined
+    ) {
+      return res.status(400).json({ message: "No fields provided to update" });
+    }
+
+    const checkinMinutes = Number(checkin_close_after_min);
+    if (isNaN(checkinMinutes)) {
+      return res
+        .status(400)
+        .json({ message: "checkin_close_after_min must be a number" });
+    }
+    if (checkinMinutes < 0) {
+      return res
+        .status(400)
+        .json({ message: "checkin_close_after_min must not be less than 0" });
+    }
+
+    const existingSchedule = await db.query.schedules.findFirst({
+      where: eq(schedules.schedule_id, scheduleId),
+    });
+
+    if (!existingSchedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    const existingRoom = await db.query.rooms.findFirst({
+      where: eq(rooms.room_id, room_id),
+    });
+
+    if (!existingRoom) {
+      return res.status(400).json({ message: "Invalid room_id" });
+    }
+
+    const ownerResult = await db
+      .select({ owner_user_id: classes.owner_user_id })
+      .from(classes)
+      .where(eq(classes.class_id, existingSchedule.class_id))
+      .limit(1);
+
+    const ownerUserId = ownerResult[0]?.owner_user_id;
+
+    if (ownerUserId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    // --- ส่วนที่ 2: อัปเดตข้อมูล ---
+    const dataToUpdate = {
+      start_time: start_time,
+      end_time: end_time,
+      checkin_close_after_min: checkinMinutes,
+      room_id: room_id,
+    };
+
+    const updatedScheduleArray = await db
+      .update(schedules)
+      .set(dataToUpdate)
+      .where(eq(schedules.schedule_id, scheduleId))
+      .returning();
+
+    // ถ้าทุกอย่างสำเร็จ
+    return res.status(200).json(updatedScheduleArray[0]);
+  } catch (error) {
+    // จัดการ Error ทั่วไป
+    console.error("An error occurred during schedule update:", error.message);
+    return res.status(error?.status || 500).json({
+      message: error?.message || "An internal server error occurred.",
+    });
+  }
+}
+
+export async function deleteScheduleById(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { scheduleId } = req.params;
+
+    // --- ส่วนที่ 1: ตรวจสอบสิทธิ์ ---
+    const existingSchedule = await db.query.schedules.findFirst({
+      where: eq(schedules.schedule_id, scheduleId),
+    });
+
+    if (!existingSchedule) {
+      return res.status(404).json({ message: "Schedule not found" });
+    }
+
+    const ownerResult = await db
+      .select({ owner_user_id: classes.owner_user_id })
+      .from(classes)
+      .where(eq(classes.class_id, existingSchedule.class_id))
+      .limit(1);
+
+    const ownerUserId = ownerResult[0]?.owner_user_id;
+
+    if (ownerUserId !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    // ลบตารางเรียน
+    await db.delete(schedules).where(eq(schedules.schedule_id, scheduleId));
+
+    // ส่ง 204 No Content กลับไป
+    return res.status(204).send();
+  } catch (error) {
+    console.error("Error deleting the schedule:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }

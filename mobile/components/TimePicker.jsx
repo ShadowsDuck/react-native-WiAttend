@@ -24,18 +24,21 @@ const TimePicker = ({ label, value, onChange, error }) => {
     return "rgba(255,255,255,0.2)";
   };
 
+  const dateValue =
+    value instanceof Date ? value : value ? new Date(value) : new Date();
+
   return (
     <View style={{ marginBottom: 10 }}>
       {showTime && (
         <DateTimePicker
-          value={value ? new Date(value) : new Date()} // ใช้ value จาก props
+          value={dateValue}
           mode="time"
           display="default"
           is24Hour={true}
           onChange={(event, selectedTime) => {
             setShowTime(false);
             if (event.type === "set" && selectedTime) {
-              onChange(selectedTime.toISOString()); // เรียก onChange จาก props
+              onChange(selectedTime);
             }
           }}
         />
@@ -69,8 +72,8 @@ const TimePicker = ({ label, value, onChange, error }) => {
             placeholder=""
             editable={false}
             value={
-              value // ใช้ value จาก props
-                ? new Date(value).toLocaleTimeString("th-TH", {
+              value && value instanceof Date
+                ? value.toLocaleTimeString("th-TH", {
                     hour: "2-digit",
                     minute: "2-digit",
                     hour12: false,

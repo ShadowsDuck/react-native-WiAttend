@@ -1,15 +1,13 @@
 import { useCallback, useState } from "react";
-import { useAuth, useUser } from "@clerk/clerk-expo";
+import { useAuth } from "@clerk/clerk-expo";
 import axios from "axios";
 import API_URL from "../config/api";
 
 export const useSchedule = () => {
   const { getToken } = useAuth();
-  const { user } = useUser();
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  // const [schedule, setSchedule] = useState([]);
+  const [scheduleData, setScheduleData] = useState(null);
 
   const createSchedule = useCallback(
     async (classId, data) => {
@@ -48,10 +46,110 @@ export const useSchedule = () => {
     [getToken]
   );
 
+  const fetchScheduleById = useCallback(
+    async (scheduleId) => {
+      if (!scheduleId) throw new Error("scheduleId is required");
+
+      setLoading(true);
+      try {
+        const token = await getToken({ template: "wiattend-api" });
+
+        const res = await axios.get(`${API_URL}/schedules/${scheduleId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        setScheduleData(res.data);
+        return res.data;
+      } catch (error) {
+        console.error(
+          "❌ Error fetching schedule:",
+          error.response?.data?.message || error.message
+        );
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
+  const updateScheduleById = useCallback(
+    async (scheduleId, updatedData) => {
+      if (!scheduleId) throw new Error("scheduleId is required.");
+      if (!updatedData || typeof updatedData !== "object") {
+        throw new Error("updatedData must be an object.");
+      }
+
+      setLoading(true);
+      try {
+        const token = await getToken({ template: "wiattend-api" });
+
+        const res = await axios.put(
+          `${API_URL}/schedules/${scheduleId}`,
+          updatedData,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        if (res.status === 200) {
+          setScheduleData(res.data);
+          return res.data;
+        } else {
+          throw new Error("Failed to update schedule");
+        }
+      } catch (error) {
+        console.error(
+          "❌ Error updating schedule:",
+          error.response?.data || error.message
+        );
+        throw error;
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
+  const deleteScheduleById = useCallback(
+    async (scheduleId) => {
+      if (!scheduleId) throw new Error("scheduleId is required.");
+
+      setLoading(true);
+      try {
+        const token = await getToken({ template: "wiattend-api" });
+
+        await axios.delete(`${API_URL}/schedules/${scheduleId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+
+        return true;
+      } catch (error) {
+        console.error(
+          "❌ Error deleting schedule:",
+          error.response?.data || error.message
+        );
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
   return {
     loading,
-    error,
-    // schedule,
+    scheduleData,
     createSchedule,
+    fetchScheduleById,
+    updateScheduleById,
+    deleteScheduleById,
   };
 };

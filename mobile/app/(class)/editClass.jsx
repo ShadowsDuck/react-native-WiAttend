@@ -92,7 +92,7 @@ const EditClassPage = () => {
       />
 
       {/* CONTENT */}
-      <ScrollView className="flex-1 px-5 md:px-16 mt-10">
+      <ScrollView className="flex-1 px-16 mt-10">
         <View className="gap-5 mt-3">
           {/* ส่วนที่แก้ไขได้ */}
           <Input
@@ -138,7 +138,7 @@ const EditClassPage = () => {
             onPress={() => {
               Alert.alert(
                 "ยืนยันการลบ",
-                "คุณแน่ใจหรือไม่ว่าต้องการลบชั้นเรียนนี้? \nการกระทำนี้ไม่สามารถย้อนกลับได้ และข้อมูลทั้งหมดของชั้นเรียนจะถูกลบไปด้วย",
+                "ต้องการลบชั้นเรียนนี้ใช่ไหม? \nข้อมูลทั้งหมด เช่น ตารางเรียนและการเช็คชื่อ จะถูกลบอย่างถาวร",
                 [
                   { text: "ยกเลิก", style: "cancel" },
                   {
