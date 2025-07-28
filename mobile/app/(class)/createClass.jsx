@@ -30,10 +30,36 @@ const CreateClassroom = () => {
         return;
       }
 
+      const semesterWeeksNumber = Number(semesterWeeks.trim());
+
+      if (isNaN(semesterWeeksNumber)) {
+        Alert.alert(
+          "ข้อมูลผิดพลาด",
+          "ระยะเวลาการสอน (สัปดาห์) ต้องเป็นตัวเลขเท่านั้น"
+        );
+        return;
+      }
+
+      if (semesterWeeksNumber <= 0) {
+        Alert.alert(
+          "ข้อมูลไม่ถูกต้อง",
+          "ระยะเวลาการสอนต้องมีอย่างน้อย 1 สัปดาห์"
+        );
+        return;
+      }
+
+      if (semesterWeeksNumber > 48) {
+        Alert.alert(
+          "ข้อมูลไม่สมเหตุสมผล",
+          "ระยะเวลาการสอนไม่ควรเกิน 48 สัปดาห์ (ประมาณ 1 ปี)"
+        );
+        return;
+      }
+
       await createClass({
         subject_name: subjectName.trim(),
         semester_start_date: semesterStartDate.trim(),
-        semester_weeks: semesterWeeks.trim(),
+        semester_weeks: semesterWeeksNumber,
       });
 
       Alert.alert("สร้างสำเร็จ", "สร้างชั้นเรียนของคุณสำเร็จแล้ว");

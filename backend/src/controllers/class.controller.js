@@ -11,8 +11,7 @@ import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
 import { eq, sql, or, asc, and, gte, lte, inArray } from "drizzle-orm";
 import { processSessionStatuses } from "../utils/session.js";
-import { add, startOfMonth, endOfMonth } from "date-fns";
-import { dayMapping } from "../utils/dayMapping.js";
+import { startOfMonth, endOfMonth } from "date-fns";
 
 export async function getUserClasses(req, res) {
   try {
@@ -98,31 +97,65 @@ export async function createClass(req, res) {
 
     const { subject_name, semester_start_date, semester_weeks } = req.body;
 
+    // ตรวจสอบว่ามีข้อมูลที่จำเป็นครบถ้วนหรือไม่
+    if (!subject_name || !semester_start_date || semester_weeks === undefined) {
+      return res.status(400).json({ message: "Missing required fields" });
+    }
+
+    // ตรวจสอบรูปแบบวันที่
+    const date = new Date(semester_start_date);
+    if (isNaN(date.getTime())) {
+      return res
+        .status(400)
+        .json({ message: "Invalid date format for semester_start_date" });
+    }
+
+    // ตรวจสอบจำนวนสัปดาห์
+    const semesterWeeksNumber = Number(semester_weeks);
+    if (isNaN(semesterWeeksNumber)) {
+      return res
+        .status(400)
+        .json({ message: "semester_weeks must be a number" });
+    }
+    if (semesterWeeksNumber <= 0) {
+      return res
+        .status(400)
+        .json({ message: "semester_weeks must be greater than 0" });
+    }
+    if (semesterWeeksNumber > 48) {
+      return res
+        .status(400)
+        .json({ message: "semester_weeks cannot exceed 48" });
+    }
+
+    // --- 2. สร้างคลาสและบันทึกลงฐานข้อมูล ---
     const join_code = await generateUniqueJoinCode();
 
-    const classroom = await db
+    const newClassArray = await db
       .insert(classes)
       .values({
         owner_user_id: userId,
         subject_name,
-        semester_start_date,
-        semester_weeks,
+        semester_start_date: date,
+        semester_weeks: semesterWeeksNumber,
         join_code,
       })
       .returning();
 
-    const classId = classroom[0].class_id;
+    const newClass = newClassArray[0];
+    const classId = newClass.class_id;
 
-    // เพิ่มเจ้าของเข้า user_classes ด้วย
+    // เพิ่มเจ้าของเข้าตาราง user_classes
     await db.insert(user_classes).values({
       user_id: userId,
       class_id: classId,
     });
 
-    res.status(201).json(classroom[0]);
+    // ส่งข้อมูลคลาสที่สร้างใหม่กลับไป
+    res.status(201).json(newClass);
   } catch (error) {
-    console.error("Error creating the classroom", error);
-    res.status(500).json({ message: "Internal server Error" });
+    console.error("Error creating the classroom:", error);
+    res.status(500).json({ message: "Internal Server Error" });
   }
 }
 
