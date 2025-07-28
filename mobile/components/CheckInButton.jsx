@@ -79,9 +79,9 @@ const CheckInButton = ({
     return (
       <TouchableOpacity
         disabled={true}
-        className="rounded-lg py-2.5 mt-4 bg-gray-600/50"
+        className="rounded-lg py-2.5 mt-4 bg-gray-400/20 border border-gray-400/30"
       >
-        <Text className="text-white text-center font-semibold text-base">
+        <Text className="text-gray-300 text-center font-semibold text-sm">
           กำลังคำนวณ...
         </Text>
       </TouchableOpacity>
@@ -93,9 +93,9 @@ const CheckInButton = ({
     return (
       <TouchableOpacity
         disabled={true}
-        className="rounded-lg py-2.5 mt-4 bg-red-800/50"
+        className="rounded-lg py-2.5 mt-4 bg-red-500/20 border border-red-500/30"
       >
-        <Text className="text-white text-center font-bold text-base">
+        <Text className="text-red-400 text-center font-semibold text-sm">
           หมดเวลาเช็คชื่อ
         </Text>
       </TouchableOpacity>
@@ -108,9 +108,9 @@ const CheckInButton = ({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
-      className="rounded-lg py-2.5 mt-4 bg-green-600"
+      className="rounded-lg py-2.5 mt-4 bg-green-500/20 border border-green-500/30"
     >
-      <Text className="text-white text-center font-semibold text-base">
+      <Text className="text-green-400 text-center font-semibold text-sm">
         {disabled
           ? "กำลังดำเนินการ..."
           : `เช็คชื่อ (เหลือ ${formatTime(remainingTime)})`}

@@ -1,8 +1,8 @@
 // HomePage.js
-import { View, Text, ScrollView, TouchableOpacity, Alert } from "react-native";
+import { View, Text, ScrollView, TouchableOpacity } from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState, useEffect } from "react";
-import { Book1, User, Key, CopySuccess } from "iconsax-react-native";
+import { Book1, User, Key, CopySuccess, Calendar } from "iconsax-react-native";
 import * as Clipboard from "expo-clipboard";
 
 // --- Hooks & Constants ---
@@ -73,11 +73,19 @@ const HomePage = () => {
     }
   };
 
+  // ฟังก์ชันสำหรับไปหน้า Manage Sessions
+  const handleViewManageSessionsPage = () => {
+    router.push({
+      pathname: "/(class)/manageSessionsPage",
+      params: { class_id: class_id, isOwner: currentUserStatus?.isOwner },
+    });
+  };
+
   // --- การจัดการ UI ตาม State ---
   if (!class_id) {
     return (
       <View className="flex-1 bg-[#121212]">
-        <Header backgroundColor="#252525" />
+        <Header backgroundColor="#121212" />
         <View className="flex-1 justify-center items-center">
           <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
         </View>
@@ -94,7 +102,7 @@ const HomePage = () => {
   if (error || !classData?.classDetail) {
     return (
       <View className="flex-1 bg-[#121212]">
-        <Header backgroundColor="#252525" />
+        <Header backgroundColor="#121212" />
         <View className="flex-1 justify-center items-center px-6">
           <Text className="text-red-500 text-lg text-center mb-2">
             ไม่สามารถโหลดข้อมูลคลาสได้
@@ -249,6 +257,22 @@ const HomePage = () => {
               <Text className="text-gray-400">ไม่มีตารางเรียน</Text>
             </View>
           )}
+        </View>
+
+        {/* --- ส่วนปุ่มดูปฏิทินคาบเรียน --- */}
+        <View className="mx-5 mt-6">
+          <TouchableOpacity
+            className="bg-gradient-to-r from-purple-600 to-blue-600 rounded-2xl p-4 flex-row items-center justify-center"
+            onPress={handleViewManageSessionsPage}
+            style={{
+              backgroundColor: "#6366F1",
+            }}
+          >
+            <Calendar size="24" color="#ffffff" variant="Bold" />
+            <Text className="text-white text-lg font-bold ml-3">
+              ดูปฏิทินคาบเรียน
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </View>

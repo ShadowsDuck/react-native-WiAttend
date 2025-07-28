@@ -9,9 +9,9 @@ import {
 } from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, sql, or, asc, and, inArray } from "drizzle-orm";
+import { eq, sql, or, asc, and, gte, lte, inArray } from "drizzle-orm";
 import { processSessionStatuses } from "../utils/session.js";
-import { add } from "date-fns";
+import { add, startOfMonth, endOfMonth } from "date-fns";
 import { dayMapping } from "../utils/dayMapping.js";
 
 export async function getUserClasses(req, res) {
@@ -517,5 +517,66 @@ export async function deleteClassById(req, res) {
   } catch (error) {
     console.error("Error deleting the class:", error);
     res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getAllSessionsByClassId(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { classId } = req.params;
+    const { month, year } = req.query;
+
+    if (!month || !year) {
+      return res
+        .status(400)
+        .json({ message: "Month and year query parameters are required." });
+    }
+
+    // แปลงเป็นตัวเลข
+    const monthNum = parseInt(month, 10);
+    const yearNum = parseInt(year, 10);
+    if (isNaN(monthNum) || isNaN(yearNum)) {
+      return res.status(400).json({ message: "Invalid month or year format." });
+    }
+
+    // --- คำนวณช่วงวันที่ของเดือนที่ต้องการ ---
+    // new Date() รับ month เป็น 0-indexed (0=Jan, 1=Feb,...)
+    const targetDate = new Date(yearNum, monthNum - 1, 1);
+    const monthStart = startOfMonth(targetDate);
+    const monthEnd = endOfMonth(targetDate);
+
+    // --- ดึงข้อมูล Sessions เฉพาะในเดือนนั้นๆ ---
+    const sessionsInMonth = await db
+      .select({
+        session_id: class_sessions.session_id,
+        schedule_id: class_sessions.schedule_id,
+        session_date: class_sessions.session_date,
+        is_canceled: class_sessions.is_canceled,
+        custom_note: class_sessions.custom_note,
+        start_time: schedules.start_time,
+        end_time: schedules.end_time,
+        room_id: schedules.room_id,
+      })
+      .from(class_sessions)
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          gte(
+            class_sessions.session_date,
+            monthStart.toISOString().split("T")[0]
+          ),
+          lte(class_sessions.session_date, monthEnd.toISOString().split("T")[0])
+        )
+      )
+      .orderBy(class_sessions.session_date); // เรียงตามวันที่
+
+    return res.status(200).json(sessionsInMonth);
+  } catch (error) {
+    console.error("Error fetching sessions for class:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 }

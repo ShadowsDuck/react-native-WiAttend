@@ -13,9 +13,11 @@ const Header = ({
   textColor,
   backgroundColorButton,
   onPress,
+  onBackPress,
 }) => {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const handleBackPress = onBackPress || (() => router.back());
 
   return (
     <View>
@@ -29,7 +31,7 @@ const Header = ({
         style={{ backgroundColor }}
       >
         <View className="flex-row">
-          <BackButton router={router} />
+          <BackButton onPress={handleBackPress} />
           <Text className="text-white font-medium text-[22px] ml-5">
             {title}
           </Text>

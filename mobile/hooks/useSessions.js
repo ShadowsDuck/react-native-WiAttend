@@ -1,11 +1,12 @@
 import axios from "axios";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useAuth } from "@clerk/clerk-expo";
 import API_URL from "../config/api";
 
 export const useSessions = () => {
   const { getToken } = useAuth();
 
+  const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const checkin = async (sessionId, scannedWifiData) => {
@@ -39,8 +40,39 @@ export const useSessions = () => {
     }
   };
 
+  const fetchSessionsByClass = useCallback(
+    async (classId, month, year) => {
+      if (!classId || !month || !year) {
+        setSessions([]);
+        return;
+      }
+      setLoading(true);
+
+      try {
+        const token = await getToken({ template: "wiattend-api" });
+        const res = await axios.get(`${API_URL}/classes/${classId}/sessions`, {
+          headers: { Authorization: `Bearer ${token}` },
+          // ส่ง month และ year เป็น query params
+          params: { month, year },
+        });
+        setSessions(res.data || []);
+      } catch (err) {
+        console.error(
+          "❌ Error fetching class sessions:",
+          err.response?.data || err.message
+        );
+        setSessions([]);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
   return {
     loading,
+    sessions,
     checkin,
+    fetchSessionsByClass,
   };
 };
