@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { Calendar } from "react-native-calendars";
 import { CalendarEdit } from "iconsax-react-native";
+import { Ionicons } from "@expo/vector-icons";
 
 const CalendarSection = ({
   calendarKey,
@@ -50,6 +51,14 @@ const CalendarSection = ({
           textMonthFontSize: 18,
           textDayHeaderFontSize: 13,
         }}
+        renderArrow={(direction) => (
+          <Ionicons
+            name={direction === "left" ? "chevron-back" : "chevron-forward"}
+            size={20}
+            color="#3b82f6"
+            style={{ marginTop: 4 }}
+          />
+        )}
       />
     </View>
   );

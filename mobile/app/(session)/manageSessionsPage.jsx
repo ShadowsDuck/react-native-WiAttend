@@ -12,25 +12,16 @@ import Loading from "../../components/Loading";
 
 // --- Utils ---
 import { setupThaiCalendar, formatThaiDate } from "../../utils/calendarConfig";
+import { toLocalDateString } from "../../utils/toLocalDateString";
 
 // ตั้งค่าปฏิทินไทยเมื่อแอปเริ่มทำงาน
 setupThaiCalendar();
-
-// ฟังก์ชันช่วยในการจัดรูปแบบวันที่ให้เป็น 'YYYY-MM-DD'
-const toLocalDateString = (date) => {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0"); // เดือนจะเริ่มจาก 0 จึงต้อง +1
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-};
 
 const ManageSessionsPage = () => {
   const { class_id, isOwner } = useLocalSearchParams();
   const { sessions, loading, fetchSessionsByClass } = useSessions();
   const router = useRouter();
 
-  // isOwner จะเป็น string ('true' หรือ 'false') ถ้าส่งมาจาก router.push
-  // ต้องแปลงเป็น boolean ก่อนใช้งาน
   const isUserOwner = isOwner === "true";
 
   // กำหนดวันที่ปัจจุบันเป็นค่าเริ่มต้นของวันที่เลือก
@@ -194,7 +185,7 @@ const ManageSessionsPage = () => {
   );
 
   // --- Handlers ---
-  // ฟังก์ชันเมื่อผู้ใช้กดที่วันที่ในปฏิทิน
+  // ฟังก์ชันเมื่อผู้ใช้กดที่วันที่ในปฏิทิン
   const handleDayPress = useCallback((day) => {
     setSelectedDate(day.dateString);
   }, []);
@@ -209,13 +200,16 @@ const ManageSessionsPage = () => {
     Alert.alert(`จัดการคาบเรียน`, `วันที่: ${session.session_date}`);
   }, []);
 
-  // ฟังก์ชันสำหรับจัดการเมื่อกดปุ่ม "ดูการเช็คชื่อ"
-  const handleViewAttendance = useCallback((sessionId) => {
-    Alert.alert(
-      `ดูการเช็คชื่อ`,
-      `กำลังไปยังหน้าเช็คชื่อของ Session ID: ${sessionId}`
-    );
-  }, []);
+  // ฟังก์ชันสำหรับจัดการเมื่อกดปุ่ม "ดูการเช็คชื่อ" - แก้ไขให้นำทางไปหน้าใหม่
+  const handleViewAttendance = (sessionId) => {
+    // นำทางไปยังหน้าดูการเช็คชื่อ
+    router.push({
+      pathname: "/(attendance)/viewAttendance",
+      params: {
+        session_id: sessionId,
+      },
+    });
+  };
 
   // แสดง Loading เต็มหน้าจอเฉพาะตอนที่กำลังโหลดข้อมูลครั้งแรก (และยังไม่มี sessions เลย)
   if (loading && allSessions.length === 0) {
