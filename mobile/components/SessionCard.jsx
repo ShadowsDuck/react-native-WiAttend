@@ -38,7 +38,8 @@ const SessionCard = ({
         <View className="flex-row items-center mt-2">
           <Clock size="16" color="#9CA3AF" />
           <Text className="text-gray-300 text-sm ml-2">
-            {formatTime(session.start_time)} - {formatTime(session.end_time)}
+            เวลา: {formatTime(session.start_time)} -{" "}
+            {formatTime(session.end_time)}
           </Text>
         </View>
 

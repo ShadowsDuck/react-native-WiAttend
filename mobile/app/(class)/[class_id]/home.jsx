@@ -76,7 +76,7 @@ const HomePage = () => {
   // ฟังก์ชันสำหรับไปหน้า Manage Sessions
   const handleViewManageSessionsPage = () => {
     router.push({
-      pathname: "/(class)/manageSessionsPage",
+      pathname: "/(session)/manageSessionsPage",
       params: { class_id: class_id, isOwner: currentUserStatus?.isOwner },
     });
   };

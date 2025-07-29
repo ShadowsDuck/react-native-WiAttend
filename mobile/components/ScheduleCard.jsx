@@ -42,7 +42,8 @@ const ScheduleCard = ({
       <View className="flex-row items-center mt-2">
         <Clock size="16" color="#9CA3AF" />
         <Text className="text-gray-300 text-sm ml-2">
-          {schedule.start_time?.slice(0, 5)} - {schedule.end_time?.slice(0, 5)}
+          เวลา: {schedule.start_time?.slice(0, 5)} -{" "}
+          {schedule.end_time?.slice(0, 5)}
         </Text>
       </View>
       <View className="flex-row items-center mt-2 mb-1">
