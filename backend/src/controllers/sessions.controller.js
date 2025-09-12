@@ -1,5 +1,10 @@
 import { db } from "../config/db.js";
-import { schedules, class_sessions, attendances } from "../db/schema.js";
+import {
+  schedules,
+  class_sessions,
+  attendances,
+  classes,
+} from "../db/schema.js";
 import { getAuth } from "@clerk/express";
 import { eq, sql } from "drizzle-orm";
 import { fromZonedTime, formatInTimeZone } from "date-fns-tz";
@@ -140,5 +145,48 @@ export async function checkin(req, res) {
   } catch (error) {
     console.error("Error check-in", error);
     res.status(500).json({ message: "Internal server Error" });
+  }
+}
+
+export async function updateSessionStatus(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { sessionId } = req.params;
+    const { is_canceled, custom_note } = req.body;
+    console.log("sessionId param:", sessionId);
+    console.log("userId:", userId);
+    const sessionToUpdate = await db
+      .select({
+        owner_user_id: classes.owner_user_id,
+      })
+      .from(class_sessions)
+      .innerJoin(classes, eq(class_sessions.class_id, classes.class_id))
+      .where(eq(class_sessions.session_id, sessionId))
+      .limit(1);
+
+    if (sessionToUpdate.length === 0) {
+      return res.status(404).json({ message: "Session not found" });
+    }
+
+    console.log("query result:", sessionToUpdate);
+    const sessionData = sessionToUpdate[0];
+    if (sessionData.owner_user_id !== userId) {
+      return res
+        .status(403)
+        .json({ message: "You are not the owner of this class" });
+    }
+
+    await db
+      .update(class_sessions)
+      .set({
+        is_canceled: is_canceled,
+        custom_note: custom_note !== undefined ? custom_note : null,
+      })
+      .where(eq(class_sessions.session_id, sessionId));
+
+    return res.status(200).json({ message: "Session updated successfully" });
+  } catch (error) {
+    console.error("❌ Error updating session:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }

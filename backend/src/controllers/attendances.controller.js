@@ -211,7 +211,12 @@ export async function getAttendanceSummary(req, res) {
     const totalPlannedSessionsResult = await db
       .select({ count: count() })
       .from(class_sessions)
-      .where(eq(class_sessions.class_id, classId));
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false)
+        )
+      );
     const totalPlannedSessionsCount = totalPlannedSessionsResult[0]?.count ?? 0;
 
     const sessionsHeldSoFarResult = await db
@@ -223,7 +228,10 @@ export async function getAttendanceSummary(req, res) {
       )
       .where(
         and(
-          eq(class_sessions.class_id, classId),
+          and(
+            eq(class_sessions.class_id, classId),
+            eq(class_sessions.is_canceled, false)
+          ),
           sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
         )
       );

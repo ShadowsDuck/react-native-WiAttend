@@ -9,6 +9,7 @@ import Header from "../../components/Header";
 import CalendarSection from "../../components/CalendarSection";
 import SessionsList from "../../components/SessionsList";
 import Loading from "../../components/Loading";
+import ManageSessionModal from "../../components/ManageSessionModal";
 
 // --- Utils ---
 import { setupThaiCalendar, formatThaiDate } from "../../utils/calendarConfig";
@@ -19,8 +20,12 @@ setupThaiCalendar();
 
 const ManageSessionsPage = () => {
   const { class_id, isOwner } = useLocalSearchParams();
-  const { sessions, fetchSessionsByClass, loading } = useSessions();
+  const { sessions, fetchSessionsByClass, updateSession, loading } =
+    useSessions();
   const router = useRouter();
+
+  const [isModalVisible, setIsModalVisible] = useState(false);
+  const [selectedSession, setSelectedSession] = useState(null);
 
   const isUserOwner = isOwner === "true";
 
@@ -161,8 +166,35 @@ const ManageSessionsPage = () => {
   }, []);
 
   const handleManageSession = useCallback((session) => {
-    Alert.alert("จัดการคาบเรียน", `วันที่: ${session.session_date}`);
+    console.log(session);
+
+    setSelectedSession(session); // เก็บข้อมูล session ที่ถูกเลือก
+    setIsModalVisible(true); // เปิด Modal
   }, []);
+
+  const handleSaveChanges = async ({ sessionId, isCanceled, note }) => {
+    try {
+      await updateSession(sessionId, isCanceled, note);
+
+      setAllSessions((prev) =>
+        prev.map((s) =>
+          s.session_id === sessionId
+            ? { ...s, is_canceled: isCanceled, custom_note: note }
+            : s
+        )
+      );
+
+      Alert.alert("สำเร็จ", "อัปเดตสถานะคาบเรียนเรียบร้อยแล้ว");
+      handleCloseModal();
+    } catch {
+      Alert.alert("ผิดพลาด", "ไม่สามารถอัปเดตคาบเรียนได้");
+    }
+  };
+
+  const handleCloseModal = () => {
+    setIsModalVisible(false);
+    setSelectedSession(null);
+  };
 
   const handleViewAttendance = (sessionId) => {
     router.push({
@@ -210,6 +242,13 @@ const ManageSessionsPage = () => {
           isOwner={isUserOwner}
         />
       </ScrollView>
+
+      <ManageSessionModal
+        visible={isModalVisible}
+        session={selectedSession}
+        onClose={handleCloseModal}
+        onSave={handleSaveChanges}
+      />
     </View>
   );
 };

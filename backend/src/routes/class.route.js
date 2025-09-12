@@ -27,6 +27,6 @@ router.delete("/:classId", requireAuth(), deleteClassById);
 router.post("/:classId/schedules", requireAuth(), createScheduleAndSessions);
 router.get("/:classId/sessions", requireAuth(), getAllSessionsByClassId);
 
-router.get("/:classId/summary", getAttendanceSummary);
+router.get("/:classId/summary", requireAuth(), getAttendanceSummary);
 
 export default router;

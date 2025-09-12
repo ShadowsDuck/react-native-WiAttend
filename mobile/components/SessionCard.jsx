@@ -91,7 +91,7 @@ const SessionCard = ({
                 session.is_canceled ? "text-gray-400" : "text-green-400"
               }`}
             >
-              เช็คชื่อ
+              สรุปการเข้าเรียน
             </Text>
           </TouchableOpacity>
         </View>

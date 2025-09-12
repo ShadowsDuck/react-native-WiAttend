@@ -81,10 +81,35 @@ export const useSessions = () => {
     [getToken]
   );
 
+  const updateSession = async (sessionId, isCanceled, note) => {
+    try {
+      const token = await getToken({ template: "wiattend-api" });
+
+      const res = await axios.put(
+        `${API_URL}/sessions/${sessionId}`,
+        {
+          is_canceled: isCanceled,
+          custom_note: note,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      return res.data;
+    } catch (err) {
+      console.error("❌ Error updating session:", err.response?.data || err);
+      throw err;
+    }
+  };
+
   return {
     loading,
     sessions,
     checkin,
     fetchSessionsByClass,
+    updateSession,
   };
 };

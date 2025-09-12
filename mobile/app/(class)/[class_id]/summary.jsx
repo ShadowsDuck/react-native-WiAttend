@@ -6,7 +6,7 @@ import {
   StatusBar,
   ActivityIndicator,
 } from "react-native";
-import { useGlobalSearchParams } from "expo-router";
+import { router, useGlobalSearchParams } from "expo-router";
 import { useAttendanceSummary } from "../../../hooks/useAttendanceSummary";
 import ProfessorView from "../../../components/ProfessorView";
 import StudentView from "../../../components/StudentView";
@@ -36,7 +36,7 @@ export default function SummaryPage() {
 
   return (
     <View className="flex-1" style={{ backgroundColor: "#121212" }}>
-      <Header backgroundColor="#252525" />
+      <Header backgroundColor="#252525" onBackPress={() => router.push("/")} />
       <StatusBar barStyle="light-content" />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
