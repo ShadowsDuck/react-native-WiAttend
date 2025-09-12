@@ -15,6 +15,7 @@ import {
   getAttendanceSummary,
   getStudentAttendanceDetail,
 } from "../controllers/attendances.controller.js";
+import { exportAttendanceAsCsv } from "../controllers/exportAttendanceAsCsv.controller.js";
 
 const router = express.Router();
 
@@ -35,6 +36,7 @@ router.get(
   requireAuth(),
   getStudentAttendanceDetail
 );
+router.get("/:classId/export", exportAttendanceAsCsv);
 
 router.get("/:classId/members", requireAuth(), getClassMembers);
 

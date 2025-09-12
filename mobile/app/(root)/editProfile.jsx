@@ -151,6 +151,7 @@ const EditProfile = () => {
                 value: "Information Technology",
               },
             ]}
+            search={false}
           />
 
           <Dropdown
@@ -163,6 +164,7 @@ const EditProfile = () => {
               { label: "ปี 3", value: 3 },
               { label: "ปี 4", value: 4 },
             ]}
+            search={false}
           />
         </View>
       </ScrollView>

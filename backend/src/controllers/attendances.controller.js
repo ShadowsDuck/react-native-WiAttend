@@ -8,7 +8,7 @@ import {
   schedules,
 } from "../db/schema.js";
 import { getAuth, clerkClient } from "@clerk/express";
-import { eq, sql, ne, and, count } from "drizzle-orm";
+import { eq, sql, ne, and, count, asc } from "drizzle-orm";
 
 export async function getAttendanceSessionById(req, res) {
   try {

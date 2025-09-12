@@ -120,6 +120,7 @@ const CreateSchedule = () => {
               { label: "วันเสาร์", value: "saturday" },
               { label: "วันอาทิตย์", value: "sunday" },
             ]}
+            search={false}
           />
 
           <TimePicker

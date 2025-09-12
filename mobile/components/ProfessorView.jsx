@@ -5,6 +5,7 @@ import Dropdown from "./Dropdown";
 import { Entypo } from "@expo/vector-icons";
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import ExportButton from "./ExportButton";
 
 const filterItems = [
   { label: "ทั้งหมด", value: "all" },
@@ -85,7 +86,11 @@ const ProfessorView = ({ data }) => {
         </View>
       </Card>
 
-      <Card title="รายชื่อนักเรียนและสถิติ">
+      <Card>
+        <View className="flex-row items-center justify-between mb-4">
+          <Text className="text-white text-xl font-bold">รายละเอียดคลาส</Text>
+          <ExportButton class_id={data.class_id} />
+        </View>
         <View className="flex-row items-center mb-4">
           <TextInput
             placeholder="ค้นหานักเรียน..."
