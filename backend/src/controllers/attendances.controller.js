@@ -8,7 +8,7 @@ import {
   schedules,
 } from "../db/schema.js";
 import { getAuth, clerkClient } from "@clerk/express";
-import { eq, sql, ne, and } from "drizzle-orm";
+import { eq, sql, ne, and, count, lte } from "drizzle-orm";
 
 export async function getAttendanceSessionById(req, res) {
   try {
@@ -180,5 +180,229 @@ export async function getAttendanceSessionById(req, res) {
     return res
       .status(error?.status || 500)
       .json({ message: error?.message || "Internal server error" });
+  }
+}
+
+export async function getAttendanceSummary(req, res) {
+  try {
+    const { userId } = getAuth(req);
+    const { classId } = req.params;
+
+    if (!classId) {
+      return res.status(400).json({ message: "classId is required" });
+    }
+
+    // --- 1. ดึงข้อมูลพื้นฐานของคลาสและสถิติ (ใช้ร่วมกันทั้ง Teacher และ Student) ---
+
+    const classResult = await db
+      .select({
+        owner_user_id: classes.owner_user_id,
+        subject_name: classes.subject_name,
+      })
+      .from(classes)
+      .where(eq(classes.class_id, classId))
+      .limit(1);
+
+    if (classResult.length === 0) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+    const classData = classResult[0];
+
+    const totalPlannedSessionsResult = await db
+      .select({ count: count() })
+      .from(class_sessions)
+      .where(eq(class_sessions.class_id, classId));
+    const totalPlannedSessionsCount = totalPlannedSessionsResult[0]?.count ?? 0;
+
+    const sessionsHeldSoFarResult = await db
+      .select({ count: count() })
+      .from(class_sessions)
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
+        )
+      );
+    const sessionsHeldSoFarCount = sessionsHeldSoFarResult[0]?.count ?? 0;
+
+    // --- 2. ตรวจสอบ Role และแยก Logic การดึงข้อมูล ---
+
+    const isOwner = classData.owner_user_id === userId;
+
+    if (isOwner) {
+      // ===== LOGIC สำหรับ TEACHER (จาก `getClassAttendances`) =====
+
+      const classMembers = await db
+        .select({
+          user_id: users.user_id,
+          student_id: users.student_id,
+          first_name: users.first_name,
+          last_name: users.last_name,
+          full_name:
+            sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as(
+              "full_name"
+            ),
+          role: sql`CASE WHEN ${classes.owner_user_id} = ${users.user_id} THEN 'teacher' ELSE 'student' END`.as(
+            "role"
+          ),
+        })
+        .from(user_classes)
+        .innerJoin(users, eq(user_classes.user_id, users.user_id))
+        .innerJoin(classes, eq(user_classes.class_id, classes.class_id))
+        .where(eq(user_classes.class_id, classId));
+
+      const studentMembers = classMembers.filter(
+        (member) => member.role !== "teacher"
+      );
+      const userIds = studentMembers.map((m) => m.user_id);
+      let clerkUsersMap = new Map();
+
+      if (userIds.length > 0) {
+        const clerkUserListResponse = await clerkClient.users.getUserList({
+          userId: userIds,
+        });
+        clerkUserListResponse.data.forEach((user) => {
+          clerkUsersMap.set(user.id, { imageUrl: user.imageUrl });
+        });
+      }
+
+      const attendanceRecords = await db
+        .select({
+          session_id: attendances.session_id,
+          user_id: attendances.user_id,
+          checked_in_at: attendances.checked_in_at,
+        })
+        .from(attendances)
+        .innerJoin(
+          class_sessions,
+          eq(attendances.session_id, class_sessions.session_id)
+        )
+        .where(eq(class_sessions.class_id, classId));
+
+      const attendanceMap = new Map();
+      attendanceRecords.forEach((rec) => {
+        if (!attendanceMap.has(rec.session_id)) {
+          attendanceMap.set(rec.session_id, new Map());
+        }
+        attendanceMap.get(rec.session_id).set(rec.user_id, rec);
+      });
+
+      const result = studentMembers.map((member) => {
+        const clerkProfile = clerkUsersMap.get(member.user_id);
+        return {
+          ...member,
+          imageUrl: clerkProfile?.imageUrl || null,
+          attendances: Array.from(attendanceMap.entries()).map(
+            ([sessionId, map]) => {
+              const rec = map.get(member.user_id);
+              return {
+                session_id: sessionId,
+                is_present: !!rec,
+                checked_in_at: rec?.checked_in_at || null,
+              };
+            }
+          ),
+        };
+      });
+
+      return res.status(200).json({
+        isOwner: true,
+        subject_name: classData.subject_name,
+        total_planned_sessions: totalPlannedSessionsCount,
+        sessions_held_so_far: sessionsHeldSoFarCount,
+        members: result,
+      });
+    } else {
+      // ===== LOGIC สำหรับ STUDENT (จาก `getMyAttendances`) =====
+
+      const enrolled = await db
+        .select()
+        .from(user_classes)
+        .where(
+          and(
+            eq(user_classes.user_id, userId),
+            eq(user_classes.class_id, classId)
+          )
+        );
+
+      if (enrolled.length === 0) {
+        return res
+          .status(403)
+          .json({ message: "You are not enrolled in this class" });
+      }
+
+      // 1. ดึง "ทุกคาบเรียนที่ผ่านไปแล้ว" ของคลาสนี้
+      const pastSessions = await db
+        .select({
+          session_id: class_sessions.session_id,
+          session_date: class_sessions.session_date,
+          start_time: schedules.start_time,
+          // อาจจะดึงข้อมูลอื่น ๆ ที่ต้องการแสดงผลมาด้วย
+        })
+        .from(class_sessions)
+        .innerJoin(
+          schedules,
+          eq(class_sessions.schedule_id, schedules.schedule_id)
+        )
+        .where(
+          and(
+            eq(class_sessions.class_id, classId),
+            sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
+          )
+        )
+        .orderBy(class_sessions.session_date); // เรียงตามวันที่
+
+      // 2. ดึง "ประวัติการเช็คชื่อ" ของนักเรียนคนนี้
+      const studentAttendanceRecords = await db
+        .select({
+          session_id: attendances.session_id,
+          checked_in_at: attendances.checked_in_at,
+        })
+        .from(attendances)
+        .where(
+          and(
+            eq(
+              attendances.user_id,
+              userId
+            ) /* อาจจะเพิ่ม inArray(attendances.session_id, ...) เพื่อประสิทธิภาพ */
+          )
+        );
+
+      // 3. สร้าง Set เพื่อให้ค้นหาการเช็คชื่อได้เร็ว
+      const checkedInSessionIds = new Set(
+        studentAttendanceRecords.map((rec) => rec.session_id)
+      );
+      const checkedInTimeMap = new Map(
+        studentAttendanceRecords.map((rec) => [
+          rec.session_id,
+          rec.checked_in_at,
+        ])
+      );
+
+      // 4. สร้าง "ประวัติการเข้าเรียนฉบับสมบูรณ์"
+      const fullAttendanceHistory = pastSessions.map((session) => ({
+        session_id: session.session_id,
+        session_date: session.session_date, // วันที่ของคาบเรียน
+        start_time: session.start_time,
+        is_present: checkedInSessionIds.has(session.session_id),
+        checked_in_at: checkedInTimeMap.get(session.session_id) || null,
+      }));
+
+      return res.status(200).json({
+        isOwner: false,
+        subject_name: classData.subject_name,
+        total_planned_sessions: totalPlannedSessionsCount,
+        sessions_held_so_far: sessionsHeldSoFarCount, // <-- ตัวหารที่ถูกต้อง
+        // ส่งประวัติฉบับสมบูรณ์ไปแทน records เดิม
+        attendances: fullAttendanceHistory,
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error fetching attendance summary:", err);
+    return res.status(500).json({ message: "Internal server error" });
   }
 }

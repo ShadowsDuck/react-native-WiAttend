@@ -135,7 +135,7 @@ const ViewAttendancePage = () => {
               {attendanceList.map((attendance, index) => (
                 <View
                   key={`${attendance.user_id}-${index}`}
-                  className={`bg-[#2C2C2C] rounded-xl p-4 flex-row items-center justify-between ${
+                  className={`bg-[#2C2C2C] rounded-xl p-4 flex-row items-center justify-between mb-2 ${
                     attendance.is_present
                       ? "border-l-4 border-green-500"
                       : "border-l-4 border-red-500"

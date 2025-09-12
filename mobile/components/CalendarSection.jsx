@@ -4,8 +4,8 @@ import { CalendarEdit } from "iconsax-react-native";
 import { Ionicons } from "@expo/vector-icons";
 
 const CalendarSection = ({
-  calendarKey,
-  initialDate,
+  current,
+  selectedDate,
   onDayPress,
   onMonthChange,
   markedDates,
@@ -21,8 +21,7 @@ const CalendarSection = ({
 
       <Calendar
         // --- Props ที่สำคัญสำหรับการ Reset ---
-        key={calendarKey}
-        initialDate={initialDate}
+        current={current}
         // --- Props การทำงาน ---
         onDayPress={onDayPress}
         onMonthChange={onMonthChange}
@@ -30,7 +29,7 @@ const CalendarSection = ({
         markingType={"dot"}
         monthFormat={"MMMM yyyy"}
         firstDay={1} // 1 = Monday
-        // --- Styling (จากโค้ดของคุณ) ---
+        // --- Styling ---
         theme={{
           backgroundColor: "#1E1E1E",
           calendarBackground: "#1E1E1E",

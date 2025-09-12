@@ -10,6 +10,7 @@ import {
   getAllSessionsByClassId,
 } from "../controllers/class.controller.js";
 import { createScheduleAndSessions } from "../controllers/schedules.controller.js";
+import { getAttendanceSummary } from "../controllers/attendances.controller.js";
 
 const router = express.Router();
 
@@ -25,5 +26,7 @@ router.delete("/:classId", requireAuth(), deleteClassById);
 
 router.post("/:classId/schedules", requireAuth(), createScheduleAndSessions);
 router.get("/:classId/sessions", requireAuth(), getAllSessionsByClassId);
+
+router.get("/:classId/summary", getAttendanceSummary);
 
 export default router;

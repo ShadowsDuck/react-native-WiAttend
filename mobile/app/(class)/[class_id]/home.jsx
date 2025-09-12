@@ -43,6 +43,7 @@ const HomePage = () => {
       if (class_id) {
         fetchClassById(class_id);
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [class_id])
   );
 

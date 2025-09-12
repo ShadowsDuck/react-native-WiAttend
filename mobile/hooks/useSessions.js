@@ -52,10 +52,22 @@ export const useSessions = () => {
         const token = await getToken({ template: "wiattend-api" });
         const res = await axios.get(`${API_URL}/classes/${classId}/sessions`, {
           headers: { Authorization: `Bearer ${token}` },
-          // ส่ง month และ year เป็น query params
           params: { month, year },
         });
-        setSessions(res.data || []);
+
+        // Merge กับ sessions เดิม แทนการเขียนทับ
+        setSessions((prevSessions) => {
+          const existingIds = new Set(
+            prevSessions.map(
+              (s) => s.id || `${s.session_date}-${s.session_time}`
+            )
+          );
+          const newSessions = (res.data || []).filter(
+            (s) =>
+              !existingIds.has(s.id || `${s.session_date}-${s.session_time}`)
+          );
+          return [...prevSessions, ...newSessions];
+        });
       } catch (err) {
         console.error(
           "❌ Error fetching class sessions:",

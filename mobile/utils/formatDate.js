@@ -6,3 +6,8 @@ export const formatDate = (dateStr) => {
   const year = d.getFullYear();
   return `${day}-${month}-${year}`;
 };
+
+export const formatTime = (dateStr) => {
+  if (!dateStr || typeof dateStr !== "string") return "";
+  return dateStr.slice(11, 19);
+};

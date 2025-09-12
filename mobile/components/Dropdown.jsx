@@ -4,7 +4,15 @@ import { Dropdown } from "react-native-element-dropdown";
 import { Ionicons } from "@expo/vector-icons";
 import FloatingLabel from "@/components/FloatingLabel";
 
-const FloatingDropdown = ({ label, value, onChange, items, error }) => {
+const FloatingDropdown = ({
+  label,
+  value,
+  onChange,
+  items,
+  error,
+  height = 64,
+  search = true,
+}) => {
   const [isFocused, setIsFocused] = useState(false);
   const dropdownRef = useRef(null);
 
@@ -22,7 +30,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
       <TouchableOpacity
         activeOpacity={1}
         onPress={() => dropdownRef.current?.open?.()}
-        style={{ position: "relative", minHeight: 64 }}
+        style={{ position: "relative", minHeight: height }}
       >
         <FloatingLabel
           label={label}
@@ -36,6 +44,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
           ref={dropdownRef}
           style={[
             styles.dropdown,
+            { height },
             {
               borderColor: error
                 ? "#f87171"
@@ -51,7 +60,7 @@ const FloatingDropdown = ({ label, value, onChange, items, error }) => {
           activeColor="#1e1e1e"
           searchPlaceholderTextColor="#aaa"
           data={items}
-          search
+          search={search}
           maxHeight={300}
           labelField="label"
           valueField="value"
@@ -80,7 +89,7 @@ export default FloatingDropdown;
 
 const styles = StyleSheet.create({
   dropdown: {
-    height: 64,
+    // height: 64,
     backgroundColor: "#121212",
     borderRadius: 11,
     borderWidth: 1,
