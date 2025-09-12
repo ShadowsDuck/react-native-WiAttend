@@ -467,7 +467,7 @@ export async function getAllSessionsByClassId(req, res) {
           lte(class_sessions.session_date, monthEnd.toISOString().split("T")[0])
         )
       )
-      .orderBy(class_sessions.session_date); // เรียงตามวันที่
+      .orderBy(class_sessions.session_date, schedules.start_time);
 
     return res.status(200).json(sessionsInMonth);
   } catch (error) {

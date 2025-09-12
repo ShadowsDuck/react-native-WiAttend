@@ -113,7 +113,9 @@ export default function App() {
             <RefreshControl
               refreshing={loading}
               onRefresh={fetchUserClasses}
-              tintColor="#ffffff"
+              tintColor="#6366F1"
+              colors={["#6366F1"]}
+              progressBackgroundColor="#1E1E1E"
             />
           }
           ListHeaderComponent={() => (

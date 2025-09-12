@@ -153,8 +153,7 @@ export async function updateSessionStatus(req, res) {
     const { userId } = getAuth(req);
     const { sessionId } = req.params;
     const { is_canceled, custom_note } = req.body;
-    console.log("sessionId param:", sessionId);
-    console.log("userId:", userId);
+
     const sessionToUpdate = await db
       .select({
         owner_user_id: classes.owner_user_id,
@@ -168,7 +167,6 @@ export async function updateSessionStatus(req, res) {
       return res.status(404).json({ message: "Session not found" });
     }
 
-    console.log("query result:", sessionToUpdate);
     const sessionData = sessionToUpdate[0];
     if (sessionData.owner_user_id !== userId) {
       return res

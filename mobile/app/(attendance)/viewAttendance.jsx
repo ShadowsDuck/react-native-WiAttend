@@ -1,7 +1,14 @@
 // ViewAttendancePage.js
-import { View, Text, ScrollView, TouchableOpacity, Image } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  RefreshControl,
+} from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { User, Clock, Calendar } from "iconsax-react-native";
 
 // --- Hooks ---
@@ -19,6 +26,7 @@ const ViewAttendancePage = () => {
   const router = useRouter();
   const { attendanceData, loading, fetchAttendanceSessionById } =
     useAttendances();
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // ดึงข้อมูลการเช็คชื่อเมื่อเข้าหน้า
   useEffect(() => {
@@ -30,6 +38,18 @@ const ViewAttendancePage = () => {
   const handleRetry = useCallback(() => {
     if (session_id) {
       fetchAttendanceSessionById(session_id);
+    }
+  }, [session_id, fetchAttendanceSessionById]);
+
+  // ฟังก์ชันสำหรับ Pull to Refresh
+  const onRefresh = useCallback(async () => {
+    if (!session_id) return;
+
+    setIsRefreshing(true);
+    try {
+      await fetchAttendanceSessionById(session_id);
+    } finally {
+      setIsRefreshing(false);
     }
   }, [session_id, fetchAttendanceSessionById]);
 
@@ -48,20 +68,33 @@ const ViewAttendancePage = () => {
     return (
       <View className="flex-1 bg-[#121212]">
         <Header backgroundColor="#252525" onBackPress={() => router.back()} />
-        <View className="flex-1 justify-center items-center px-6">
-          <Text className="text-red-500 text-lg text-center mb-2">
-            ไม่สามารถโหลดข้อมูลการเช็คชื่อได้
-          </Text>
-          <Text className="text-gray-400 text-sm text-center mb-6">
-            อาจเกิดจากปัญหาการเชื่อมต่อหรือคาบเรียนนี้ไม่มีอยู่จริง
-          </Text>
-          <TouchableOpacity
-            className="bg-blue-500 px-6 py-3 rounded-lg"
-            onPress={handleRetry}
-          >
-            <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor="#6366F1"
+              colors={["#6366F1"]}
+              progressBackgroundColor="#1E1E1E"
+            />
+          }
+        >
+          <View className="flex-1 justify-center items-center px-6">
+            <Text className="text-red-500 text-lg text-center mb-2">
+              ไม่สามารถโหลดข้อมูลการเช็คชื่อได้
+            </Text>
+            <Text className="text-gray-400 text-sm text-center mb-6">
+              อาจเกิดจากปัญหาการเชื่อมต่อหรือคาบเรียนนี้ไม่มีอยู่จริง
+            </Text>
+            <TouchableOpacity
+              className="bg-blue-500 px-6 py-3 rounded-lg"
+              onPress={handleRetry}
+            >
+              <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -80,9 +113,25 @@ const ViewAttendancePage = () => {
     <View className="flex-1 bg-[#121212]">
       <Header backgroundColor="#252525" onBackPress={() => router.back()} />
 
+      {/* แสดงตัวบ่งชี้การรีเฟรช */}
+      {isRefreshing && (
+        <View className="absolute top-20 right-5 z-10 bg-blue-500 px-3 py-1 rounded-full">
+          <Text className="text-white text-xs">กำลังอัพเดต...</Text>
+        </View>
+      )}
+
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor="#6366F1"
+            colors={["#6366F1"]}
+            progressBackgroundColor="#1E1E1E"
+          />
+        }
       >
         {/* Session Info Section */}
         <View className="bg-[#1E1E1E] rounded-2xl p-5 mb-6 mx-5 mt-6">

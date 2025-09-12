@@ -192,7 +192,7 @@ export async function getAttendanceSummary(req, res) {
       return res.status(400).json({ message: "classId is required" });
     }
 
-    // --- 1. ดึงข้อมูลพื้นฐานของคลาสและสถิติ (ใช้ร่วมกันทั้ง Teacher และ Student) ---
+    // --- 1. ดึงข้อมูลพื้นฐานของคลาสและสถิติ (ใช้ร่วมกัน) ---
 
     const classResult = await db
       .select({
@@ -228,10 +228,8 @@ export async function getAttendanceSummary(req, res) {
       )
       .where(
         and(
-          and(
-            eq(class_sessions.class_id, classId),
-            eq(class_sessions.is_canceled, false)
-          ),
+          eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false),
           sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
         )
       );
@@ -242,7 +240,7 @@ export async function getAttendanceSummary(req, res) {
     const isOwner = classData.owner_user_id === userId;
 
     if (isOwner) {
-      // ===== LOGIC สำหรับ TEACHER (จาก `getClassAttendances`) =====
+      // ===== LOGIC สำหรับ TEACHER =====
 
       const classMembers = await db
         .select({
@@ -267,8 +265,6 @@ export async function getAttendanceSummary(req, res) {
         (member) => member.role !== "teacher"
       );
       const userIds = studentMembers.map((m) => m.user_id);
-
-      // เพิ่ม teacher ด้วย
       const allUserIds = [classData.owner_user_id, ...userIds];
       let clerkUsersMap = new Map();
 
@@ -280,6 +276,27 @@ export async function getAttendanceSummary(req, res) {
           clerkUsersMap.set(user.id, { imageUrl: user.imageUrl });
         });
       }
+
+      // ดึง "ทุกคาบเรียนที่ผ่านไปแล้ว" เพื่อให้เรามีลำดับที่ถูกต้อง
+      const pastSessions = await db
+        .select({
+          session_id: class_sessions.session_id,
+        })
+        .from(class_sessions)
+        .innerJoin(
+          schedules,
+          eq(class_sessions.schedule_id, schedules.schedule_id)
+        )
+        .where(
+          and(
+            eq(class_sessions.class_id, classId),
+            eq(class_sessions.is_canceled, false),
+            sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
+          )
+        )
+        .orderBy(class_sessions.session_date, schedules.start_time);
+
+      const pastSessionIdsOrder = pastSessions.map((s) => s.session_id);
 
       const attendanceRecords = await db
         .select({
@@ -296,27 +313,31 @@ export async function getAttendanceSummary(req, res) {
 
       const attendanceMap = new Map();
       attendanceRecords.forEach((rec) => {
-        if (!attendanceMap.has(rec.session_id)) {
-          attendanceMap.set(rec.session_id, new Map());
+        if (!attendanceMap.has(rec.user_id)) {
+          attendanceMap.set(rec.user_id, new Map());
         }
-        attendanceMap.get(rec.session_id).set(rec.user_id, rec);
+        attendanceMap.get(rec.user_id).set(rec.session_id, rec);
       });
 
       const result = studentMembers.map((member) => {
         const clerkProfile = clerkUsersMap.get(member.user_id);
+        const studentAttendance =
+          attendanceMap.get(member.user_id) || new Map();
+
+        // จัดเรียง attendances ของนักเรียนแต่ละคนตามลำดับของ pastSessions
+        const orderedAttendances = pastSessionIdsOrder.map((sessionId) => {
+          const rec = studentAttendance.get(sessionId);
+          return {
+            session_id: sessionId,
+            is_present: !!rec,
+            checked_in_at: rec?.checked_in_at || null,
+          };
+        });
+
         return {
           ...member,
           imageUrl: clerkProfile?.imageUrl || null,
-          attendances: Array.from(attendanceMap.entries()).map(
-            ([sessionId, map]) => {
-              const rec = map.get(member.user_id);
-              return {
-                session_id: sessionId,
-                is_present: !!rec,
-                checked_in_at: rec?.checked_in_at || null,
-              };
-            }
-          ),
+          attendances: orderedAttendances,
         };
       });
 
@@ -329,7 +350,7 @@ export async function getAttendanceSummary(req, res) {
         members: result,
       });
     } else {
-      // ===== LOGIC สำหรับ STUDENT (จาก `getMyAttendances`) =====
+      // ===== LOGIC สำหรับ STUDENT =====
 
       const enrolled = await db
         .select()
@@ -353,7 +374,6 @@ export async function getAttendanceSummary(req, res) {
           session_id: class_sessions.session_id,
           session_date: class_sessions.session_date,
           start_time: schedules.start_time,
-          // อาจจะดึงข้อมูลอื่น ๆ ที่ต้องการแสดงผลมาด้วย
         })
         .from(class_sessions)
         .innerJoin(
@@ -363,10 +383,12 @@ export async function getAttendanceSummary(req, res) {
         .where(
           and(
             eq(class_sessions.class_id, classId),
+            eq(class_sessions.is_canceled, false),
             sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
           )
         )
-        .orderBy(class_sessions.session_date); // เรียงตามวันที่
+        // <-- แก้ไข: เพิ่มการเรียงลำดับตามเวลาด้วย
+        .orderBy(asc(class_sessions.session_date), asc(schedules.start_time));
 
       // 2. ดึง "ประวัติการเช็คชื่อ" ของนักเรียนคนนี้
       const studentAttendanceRecords = await db
@@ -375,16 +397,8 @@ export async function getAttendanceSummary(req, res) {
           checked_in_at: attendances.checked_in_at,
         })
         .from(attendances)
-        .where(
-          and(
-            eq(
-              attendances.user_id,
-              userId
-            ) /* อาจจะเพิ่ม inArray(attendances.session_id, ...) เพื่อประสิทธิภาพ */
-          )
-        );
+        .where(and(eq(attendances.user_id, userId)));
 
-      // 3. สร้าง Set เพื่อให้ค้นหาการเช็คชื่อได้เร็ว
       const checkedInSessionIds = new Set(
         studentAttendanceRecords.map((rec) => rec.session_id)
       );
@@ -398,7 +412,7 @@ export async function getAttendanceSummary(req, res) {
       // 4. สร้าง "ประวัติการเข้าเรียนฉบับสมบูรณ์"
       const fullAttendanceHistory = pastSessions.map((session) => ({
         session_id: session.session_id,
-        session_date: session.session_date, // วันที่ของคาบเรียน
+        session_date: session.session_date,
         start_time: session.start_time,
         is_present: checkedInSessionIds.has(session.session_id),
         checked_in_at: checkedInTimeMap.get(session.session_id) || null,
@@ -409,8 +423,7 @@ export async function getAttendanceSummary(req, res) {
         isOwner: false,
         subject_name: classData.subject_name,
         total_planned_sessions: totalPlannedSessionsCount,
-        sessions_held_so_far: sessionsHeldSoFarCount, // <-- ตัวหารที่ถูกต้อง
-        // ส่งประวัติฉบับสมบูรณ์ไปแทน records เดิม
+        sessions_held_so_far: sessionsHeldSoFarCount,
         attendances: fullAttendanceHistory,
       });
     }
@@ -516,6 +529,7 @@ export async function getStudentAttendanceDetail(req, res) {
       .where(
         and(
           eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false),
           sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
         )
       )

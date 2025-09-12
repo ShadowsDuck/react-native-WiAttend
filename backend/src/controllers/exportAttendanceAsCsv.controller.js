@@ -1,4 +1,3 @@
-// --- Imports ---
 import { db } from "../config/db.js";
 import {
   class_sessions,
@@ -67,6 +66,7 @@ export async function exportAttendanceAsCsv(req, res) {
       .select({
         session_id: class_sessions.session_id,
         session_date: class_sessions.session_date,
+        start_time: schedules.start_time, // ดึงเวลาเริ่มเรียนมาด้วย
       })
       .from(class_sessions)
       .innerJoin(
@@ -76,11 +76,11 @@ export async function exportAttendanceAsCsv(req, res) {
       .where(
         and(
           eq(class_sessions.class_id, classId),
-          eq(class_sessions.is_canceled, false), // <--- กรองคาบที่ยกเลิกออก
+          eq(class_sessions.is_canceled, false),
           sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
         )
       )
-      .orderBy(asc(class_sessions.session_date));
+      .orderBy(asc(class_sessions.session_date), asc(schedules.start_time)); // เรียงตามวันและเวลา
 
     // 4. ดึงข้อมูลนักเรียนและการเข้าเรียน
     const studentMembers = await db
@@ -98,7 +98,8 @@ export async function exportAttendanceAsCsv(req, res) {
           eq(user_classes.class_id, classId),
           ne(user_classes.user_id, classData.owner_user_id)
         )
-      );
+      )
+      .orderBy(asc(users.student_id));
 
     const allAttendanceRecords = await db
       .select({
@@ -110,7 +111,12 @@ export async function exportAttendanceAsCsv(req, res) {
         class_sessions,
         eq(attendances.session_id, class_sessions.session_id)
       )
-      .where(eq(class_sessions.class_id, classId));
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false)
+        )
+      );
 
     // --- Step C: Calculate Summary Data ---
 
@@ -121,25 +127,31 @@ export async function exportAttendanceAsCsv(req, res) {
       .where(
         and(
           eq(class_sessions.class_id, classId),
-          eq(class_sessions.is_canceled, false) // <--- กรองคาบที่ยกเลิกออก
+          eq(class_sessions.is_canceled, false)
         )
       );
-    const totalPlannedSessionsCount = totalPlannedSessionsResult[0]?.value;
+    const totalPlannedSessionsCount = totalPlannedSessionsResult[0]?.value ?? 0;
 
-    // 2. นับจำนวนคาบที่ถูกยกเลิก
+    // 2. นับจำนวนคาบที่ถูกยกเลิก (และดึงเวลามาด้วย)
     const canceledSessionsList = await db
       .select({
         date: class_sessions.session_date,
         reason: class_sessions.custom_note,
+        start_time: schedules.start_time, // <-- เพิ่ม: ดึงเวลาเริ่มเรียน
       })
       .from(class_sessions)
+      // v-- เพิ่ม: Join ตาราง schedules เพื่อเอาเวลา --v
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
       .where(
         and(
           eq(class_sessions.class_id, classId),
           eq(class_sessions.is_canceled, true)
         )
       )
-      .orderBy(asc(class_sessions.session_date));
+      .orderBy(asc(class_sessions.session_date), asc(schedules.start_time));
 
     // 3. คำนวณเปอร์เซ็นต์เฉลี่ย
     const totalStudents = studentMembers.length;
@@ -163,34 +175,39 @@ export async function exportAttendanceAsCsv(req, res) {
     const summaryData = [
       `"จำนวนนักเรียนทั้งหมด", "${totalStudents} คน"`,
       `"เปอร์เซ็นต์การเข้าเรียนเฉลี่ย", "${averageAttendance}%"`,
-      `"จำนวนวันที่เรียนไปแล้ว", "${sessionsHeldCount} วัน"`,
-      `"จำนวนวันเรียนทั้งหมด (ไม่รวมยกเลิก)", "${totalPlannedSessionsCount} วัน"`,
+      `"จำนวนคาบที่เรียนไปแล้ว", "${sessionsHeldCount} คาบ"`,
+      `"จำนวนคาบทั้งหมด (ไม่รวมยกเลิก)", "${totalPlannedSessionsCount} คาบ"`,
       `"จำนวนคาบที่ยกเลิก", "${canceledSessionsCount} ครั้ง"`,
       `"จัดทำโดย", "${professor?.name || "N/A"}"`,
       `"วันที่จัดทำ", "${exportDate}"`,
     ];
-    const summaryCsv = summaryHeader + summaryData.join("\n") + "\n\n";
+    const summaryCsv = summaryHeader + summaryData.join("\n");
 
-    // ** เพิ่ม: สร้างส่วนของรายการคาบที่ยกเลิก **
+    // 2. สร้างส่วนของรายการคาบที่ยกเลิก
     let canceledSessionsCsv = "";
     if (canceledSessionsList.length > 0) {
       const canceledHeader = `\n\n"รายการวันที่ยกเลิกการเรียนการสอน"\n`;
-      const canceledSubHeader = `'วันที่, เหตุผลการยกเลิก\n`;
+      // v-- เพิ่มคอลัมน์ "เวลา" --v
+      const canceledSubHeader = `"วันที่","เวลา","เหตุผลการยกเลิก"\n`;
       const canceledRows = canceledSessionsList
         .map((session) => {
           const date = new Date(session.date).toLocaleDateString("th-TH", {
             day: "2-digit",
             month: "2-digit",
             year: "numeric",
-          }); // DD-MM-YYYY
-          const reason = session.reason || "ไม่ระบุเหตุผล"; // แสดงข้อความสำรองถ้าไม่มีเหตุผล
-          return `"${date}", "${reason}"`;
+          });
+          // v-- เพิ่มการดึงและจัดรูปแบบเวลา --v
+          const timePart = session.start_time.slice(0, 5); // เอาแค่ HH:mm
+          const reason = session.reason || "ไม่ระบุเหตุผล";
+
+          // v-- เพิ่มข้อมูลเวลาลงในแถวของ CSV --v
+          return `"${date}","${timePart}","${reason}"`;
         })
         .join("\n");
       canceledSessionsCsv = canceledHeader + canceledSubHeader + canceledRows;
     }
 
-    // 2. สร้างตารางข้อมูลนักเรียน
+    // 3. สร้างตารางข้อมูลนักเรียน
     const attendanceMap = new Map();
     allAttendanceRecords.forEach((rec) => {
       if (!attendanceMap.has(rec.user_id)) {
@@ -209,18 +226,19 @@ export async function exportAttendanceAsCsv(req, res) {
       let presentCount = 0;
 
       pastSessions.forEach((session) => {
-        const dateColumnHeader = new Date(
-          session.session_date
-        ).toLocaleDateString("th-TH", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }); // DD-MM-YYYY
+        // สร้าง Header ที่ไม่ซ้ำกันโดยใช้ "วันที่ (เวลา)"
+        const datePart = new Date(session.session_date).toLocaleDateString(
+          "th-TH",
+          { day: "2-digit", month: "2-digit", year: "numeric" }
+        );
+        const timePart = session.start_time.slice(0, 5); // เอาแค่ HH:mm
+        const uniqueColumnHeader = `${datePart} (${timePart})`;
+
         if (studentCheckedInSessions.has(session.session_id)) {
-          studentRow[dateColumnHeader] = "เข้าเรียน";
+          studentRow[uniqueColumnHeader] = "เข้าเรียน";
           presentCount++;
         } else {
-          studentRow[dateColumnHeader] = "ขาดเรียน";
+          studentRow[uniqueColumnHeader] = "ขาดเรียน";
         }
       });
 
@@ -236,10 +254,10 @@ export async function exportAttendanceAsCsv(req, res) {
       return studentRow;
     });
 
-    // 3. แปลงข้อมูลตารางเป็น CSV และรวมส่วนต่างๆ
+    // 4. แปลงข้อมูลตารางเป็น CSV และรวมส่วนต่างๆ
     let tableCsv = "";
     if (dataForTable.length > 0) {
-      const opts = { withBOM: false };
+      const opts = { withBOM: false }; // BOM ถูกเพิ่มที่ summaryHeader แล้ว
       const parser = new Parser(opts);
       tableCsv = parser.parse(dataForTable);
     } else {
@@ -254,15 +272,12 @@ export async function exportAttendanceAsCsv(req, res) {
       tableCsv.trim();
 
     // --- Step E: Send the CSV File as a Response ---
-    // สร้าง String ของวันที่และเวลาปัจจุบันในรูปแบบที่ปลอดภัยสำหรับชื่อไฟล์ (YYYY-MM-DD_HH-mm-ss)
     const now = new Date();
-    const dateString = now.toLocaleDateString("th-TH", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-    }); // DD-MM-YYYY
-    const timeString = now.toLocaleTimeString("th-TH").replace(/:/g, "-"); // ให้ผลลัพธ์เป็น "HH-mm-ss"
-    const fileName = `Export_Attendance_${dateString}_${timeString}.csv`;
+    const dateForFile = now.toISOString().slice(0, 10); // YYYY-MM-DD
+    const timeForFile = now.toTimeString().slice(0, 8).replace(/:/g, "-"); // HH-mm-ss
+    const safeSubjectName =
+      classData.subject_name.replace(/[^a-zA-Z0-9ก-๙]/g, "_") || "class";
+    const fileName = `Attendance_${safeSubjectName}_${dateForFile}_${timeForFile}.csv`;
 
     res.setHeader("Content-Type", "text/csv; charset=utf-8");
     res.setHeader("Content-Disposition", `attachment; filename="${fileName}"`);

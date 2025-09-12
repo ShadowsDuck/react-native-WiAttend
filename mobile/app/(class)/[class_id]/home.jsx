@@ -1,5 +1,11 @@
 // HomePage.js
-import { View, Text, ScrollView, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useState, useEffect } from "react";
 import { Book1, User, Key, CopySuccess, Calendar } from "iconsax-react-native";
@@ -31,6 +37,7 @@ const HomePage = () => {
   } = useClasses();
   const { isCheckingIn, attemptCheckIn } = useCheckInProcess();
   const [isCopied, setIsCopied] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Reset ข้อมูลเมื่อ class_id เปลี่ยน
   useEffect(() => {
@@ -52,6 +59,18 @@ const HomePage = () => {
       fetchClassById(class_id);
     }
   };
+
+  // ฟังก์ชันสำหรับ Pull to Refresh
+  const onRefresh = useCallback(async () => {
+    if (!class_id) return;
+
+    setIsRefreshing(true);
+    try {
+      await fetchClassById(class_id);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [class_id, fetchClassById]);
 
   const copyToClipboard = async () => {
     if (isCopied) return;
@@ -82,18 +101,6 @@ const HomePage = () => {
     });
   };
 
-  // --- การจัดการ UI ตาม State ---
-  // if (!class_id) {
-  //   return (
-  //     <View className="flex-1 bg-[#121212]">
-  //       <Header backgroundColor="#121212" />
-  //       <View className="flex-1 justify-center items-center">
-  //         <Text className="text-red-500 text-lg">ไม่มีรหัสคลาส</Text>
-  //       </View>
-  //     </View>
-  //   );
-  // }
-
   // แสดง Loading เมื่อ: ยังไม่ initialize หรือกำลัง loading (ไม่ว่าจะมีข้อมูลเก่าหรือไม่)
   if (!hasInitialized || loading || !class_id) {
     return <Loading />;
@@ -104,20 +111,33 @@ const HomePage = () => {
     return (
       <View className="flex-1 bg-[#121212]">
         <Header backgroundColor="#121212" />
-        <View className="flex-1 justify-center items-center px-6">
-          <Text className="text-red-500 text-lg text-center mb-2">
-            ไม่สามารถโหลดข้อมูลคลาสได้
-          </Text>
-          <Text className="text-gray-400 text-sm text-center mb-6">
-            อาจเกิดจากปัญหาการเชื่อมต่อหรือคลาสนี้ไม่มีอยู่จริง
-          </Text>
-          <TouchableOpacity
-            className="bg-blue-500 px-6 py-3 rounded-lg"
-            onPress={handleRetry}
-          >
-            <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
-          </TouchableOpacity>
-        </View>
+        <ScrollView
+          contentContainerStyle={{ flex: 1 }}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              tintColor="#6366F1"
+              colors={["#6366F1"]}
+              progressBackgroundColor="#1E1E1E"
+            />
+          }
+        >
+          <View className="flex-1 justify-center items-center px-6">
+            <Text className="text-red-500 text-lg text-center mb-2">
+              ไม่สามารถโหลดข้อมูลคลาสได้
+            </Text>
+            <Text className="text-gray-400 text-sm text-center mb-6">
+              อาจเกิดจากปัญหาการเชื่อมต่อหรือคลาสนี้ไม่มีอยู่จริง
+            </Text>
+            <TouchableOpacity
+              className="bg-blue-500 px-6 py-3 rounded-lg"
+              onPress={handleRetry}
+            >
+              <Text className="text-white font-semibold">ลองอีกครั้ง</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
       </View>
     );
   }
@@ -161,6 +181,15 @@ const HomePage = () => {
       <ScrollView
         contentContainerStyle={{ paddingBottom: 40 }}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor="#6366F1"
+            colors={["#6366F1"]}
+            progressBackgroundColor="#1E1E1E"
+          />
+        }
       >
         <View className="my-6">
           <ClassCard item={classDetail} />

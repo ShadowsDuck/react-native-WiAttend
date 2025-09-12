@@ -42,7 +42,7 @@ const StudentView = ({ data }) => {
           >
             <View>
               <Text className="text-white font-medium">
-                คาบเรียนวันที่ {formatDate(item.session_date)}
+                {`วันที่ ${formatDate(item.session_date)} • ${item.start_time.slice(0, 5)} น.`}
               </Text>
               {item.is_present && (
                 <Text className="text-gray-400 text-sm mt-1">
