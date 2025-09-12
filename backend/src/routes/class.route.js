@@ -8,13 +8,15 @@ import {
   updateClassById,
   deleteClassById,
   getAllSessionsByClassId,
+  getClassMembers,
 } from "../controllers/class.controller.js";
 import { createScheduleAndSessions } from "../controllers/schedules.controller.js";
-import { getAttendanceSummary } from "../controllers/attendances.controller.js";
+import {
+  getAttendanceSummary,
+  getStudentAttendanceDetail,
+} from "../controllers/attendances.controller.js";
 
 const router = express.Router();
-
-// public route
 
 // protected routes
 router.get("/", requireAuth(), getUserClasses);
@@ -28,5 +30,12 @@ router.post("/:classId/schedules", requireAuth(), createScheduleAndSessions);
 router.get("/:classId/sessions", requireAuth(), getAllSessionsByClassId);
 
 router.get("/:classId/summary", requireAuth(), getAttendanceSummary);
+router.get(
+  "/:classId/students/:userId",
+  requireAuth(),
+  getStudentAttendanceDetail
+);
+
+router.get("/:classId/members", requireAuth(), getClassMembers);
 
 export default router;

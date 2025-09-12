@@ -1,16 +1,11 @@
 import { useEffect } from "react";
-import {
-  View,
-  Text,
-  ScrollView,
-  StatusBar,
-  ActivityIndicator,
-} from "react-native";
+import { View, Text, ScrollView, StatusBar } from "react-native";
 import { router, useGlobalSearchParams } from "expo-router";
 import { useAttendanceSummary } from "../../../hooks/useAttendanceSummary";
 import ProfessorView from "../../../components/ProfessorView";
 import StudentView from "../../../components/StudentView";
 import Header from "../../../components/Header";
+import Loading from "../../../components/Loading";
 
 export default function SummaryPage() {
   const { class_id } = useGlobalSearchParams();
@@ -24,14 +19,7 @@ export default function SummaryPage() {
   }, [class_id]);
 
   if (loading || !data) {
-    return (
-      <View
-        className="flex-1 items-center justify-center"
-        style={{ backgroundColor: "#121212" }}
-      >
-        <ActivityIndicator size="large" color="#fff" />
-      </View>
-    );
+    return <Loading />;
   }
 
   return (

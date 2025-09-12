@@ -8,7 +8,7 @@ import {
   schedules,
 } from "../db/schema.js";
 import { getAuth, clerkClient } from "@clerk/express";
-import { eq, sql, ne, and, count, lte } from "drizzle-orm";
+import { eq, sql, ne, and, count } from "drizzle-orm";
 
 export async function getAttendanceSessionById(req, res) {
   try {
@@ -267,11 +267,14 @@ export async function getAttendanceSummary(req, res) {
         (member) => member.role !== "teacher"
       );
       const userIds = studentMembers.map((m) => m.user_id);
+
+      // เพิ่ม teacher ด้วย
+      const allUserIds = [classData.owner_user_id, ...userIds];
       let clerkUsersMap = new Map();
 
-      if (userIds.length > 0) {
+      if (allUserIds.length > 0) {
         const clerkUserListResponse = await clerkClient.users.getUserList({
-          userId: userIds,
+          userId: allUserIds,
         });
         clerkUserListResponse.data.forEach((user) => {
           clerkUsersMap.set(user.id, { imageUrl: user.imageUrl });
@@ -318,6 +321,7 @@ export async function getAttendanceSummary(req, res) {
       });
 
       return res.status(200).json({
+        class_id: classId,
         isOwner: true,
         subject_name: classData.subject_name,
         total_planned_sessions: totalPlannedSessionsCount,
@@ -401,6 +405,7 @@ export async function getAttendanceSummary(req, res) {
       }));
 
       return res.status(200).json({
+        class_id: classId,
         isOwner: false,
         subject_name: classData.subject_name,
         total_planned_sessions: totalPlannedSessionsCount,
@@ -411,6 +416,153 @@ export async function getAttendanceSummary(req, res) {
     }
   } catch (err) {
     console.error("❌ Error fetching attendance summary:", err);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+export async function getStudentAttendanceDetail(req, res) {
+  try {
+    const { classId, userId } = req.params;
+
+    if (!classId || !userId) {
+      return res
+        .status(400)
+        .json({ message: "classId and userId are required" });
+    }
+
+    // ตรวจสอบว่ามี class จริงไหม
+    const classResult = await db
+      .select({ subject_name: classes.subject_name })
+      .from(classes)
+      .where(eq(classes.class_id, classId))
+      .limit(1);
+
+    if (classResult.length === 0) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+    const classData = classResult[0];
+
+    // ดึง student + ตรวจสอบ enrollment ไปพร้อมกัน
+    const [studentDetail] = await db
+      .select({
+        first_name: users.first_name,
+        last_name: users.last_name,
+        full_name: sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as(
+          "full_name"
+        ),
+      })
+      .from(user_classes)
+      .innerJoin(users, eq(user_classes.user_id, users.user_id))
+      .where(
+        and(
+          eq(user_classes.class_id, classId),
+          eq(user_classes.user_id, userId)
+        )
+      )
+      .limit(1);
+
+    if (!studentDetail) {
+      return res
+        .status(403)
+        .json({ message: "This student is not enrolled in this class" });
+    }
+
+    // --- นับจำนวน session ที่ plan ไว้ ---
+    const totalPlannedSessionsResult = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(class_sessions)
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false)
+        )
+      );
+
+    const totalPlannedSessionsCount = Number(
+      totalPlannedSessionsResult[0]?.count ?? 0
+    );
+
+    // --- นับจำนวน session ที่ผ่านมาแล้ว ---
+    const sessionsHeldSoFarResult = await db
+      .select({ count: sql`COUNT(*)` })
+      .from(class_sessions)
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          eq(class_sessions.is_canceled, false),
+          sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
+        )
+      );
+    const sessionsHeldSoFarCount = Number(
+      sessionsHeldSoFarResult[0]?.count ?? 0
+    );
+
+    // --- ดึง session ที่ผ่านมาแล้ว ---
+    const pastSessions = await db
+      .select({
+        session_id: class_sessions.session_id,
+        session_date: class_sessions.session_date,
+        start_time: schedules.start_time,
+      })
+      .from(class_sessions)
+      .innerJoin(
+        schedules,
+        eq(class_sessions.schedule_id, schedules.schedule_id)
+      )
+      .where(
+        and(
+          eq(class_sessions.class_id, classId),
+          sql`(${class_sessions.session_date} + ${schedules.start_time}) <= (NOW() AT TIME ZONE 'Asia/Bangkok')`
+        )
+      )
+      .orderBy(class_sessions.session_date);
+
+    // --- ดึง attendance ของนักเรียน ---
+    const studentAttendanceRecords = await db
+      .select({
+        session_id: attendances.session_id,
+        checked_in_at: attendances.checked_in_at,
+      })
+      .from(attendances)
+      .innerJoin(
+        class_sessions,
+        eq(attendances.session_id, class_sessions.session_id)
+      )
+      .where(
+        and(
+          eq(attendances.user_id, userId),
+          eq(class_sessions.class_id, classId)
+        )
+      );
+
+    const checkedInSessionIds = new Set(
+      studentAttendanceRecords.map((rec) => rec.session_id)
+    );
+    const checkedInTimeMap = new Map(
+      studentAttendanceRecords.map((rec) => [rec.session_id, rec.checked_in_at])
+    );
+
+    const fullAttendanceHistory = pastSessions.map((session) => ({
+      session_id: session.session_id,
+      session_date: session.session_date,
+      start_time: session.start_time,
+      is_present: checkedInSessionIds.has(session.session_id),
+      checked_in_at: checkedInTimeMap.get(session.session_id) || null,
+    }));
+
+    return res.status(200).json({
+      subject_name: classData.subject_name,
+      student: studentDetail,
+      total_planned_sessions: totalPlannedSessionsCount,
+      sessions_held_so_far: sessionsHeldSoFarCount,
+      attendances: fullAttendanceHistory,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching student detail:", err);
     return res.status(500).json({ message: "Internal server error" });
   }
 }

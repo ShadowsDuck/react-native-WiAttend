@@ -166,8 +166,6 @@ const ManageSessionsPage = () => {
   }, []);
 
   const handleManageSession = useCallback((session) => {
-    console.log(session);
-
     setSelectedSession(session); // เก็บข้อมูล session ที่ถูกเลือก
     setIsModalVisible(true); // เปิด Modal
   }, []);

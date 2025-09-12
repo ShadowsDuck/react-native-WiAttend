@@ -7,9 +7,9 @@ import {
   class_sessions,
   attendances,
 } from "../db/schema.js";
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import { generateUniqueJoinCode } from "../utils/generateJoinCode.js";
-import { eq, sql, or, asc, and, gte, lte, inArray } from "drizzle-orm";
+import { eq, sql, or, asc, and, gte, lte, inArray, ne } from "drizzle-orm";
 import { processSessionStatuses } from "../utils/session.js";
 import { startOfMonth, endOfMonth } from "date-fns";
 
@@ -473,5 +473,99 @@ export async function getAllSessionsByClassId(req, res) {
   } catch (error) {
     console.error("Error fetching sessions for class:", error);
     return res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+export async function getClassMembers(req, res) {
+  try {
+    const { classId } = req.params;
+
+    if (!classId) {
+      return res.status(400).json({ message: "classId is required" });
+    }
+
+    // --- 1. ดึงข้อมูลคลาสและข้อมูลของเจ้าของคลาส (อาจารย์) ---
+    const classInfoResult = await db
+      .select({
+        // Class info
+        subject_name: classes.subject_name,
+        // Teacher info
+        teacher_user_id: classes.owner_user_id,
+        teacher_first_name: users.first_name,
+        teacher_last_name: users.last_name,
+      })
+      .from(classes)
+      .innerJoin(users, eq(classes.owner_user_id, users.user_id))
+      .where(eq(classes.class_id, classId))
+      .limit(1);
+
+    if (classInfoResult.length === 0) {
+      return res.status(404).json({ message: "Class not found" });
+    }
+
+    const classInfo = classInfoResult[0];
+    const teacherId = classInfo.teacher_user_id;
+
+    // --- 2. ดึงรายชื่อนักเรียนทั้งหมดในคลาส (ไม่รวมอาจารย์) ---
+    const students = await db
+      .select({
+        user_id: users.user_id,
+        full_name: sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as(
+          "full_name"
+        ),
+      })
+      .from(user_classes)
+      .innerJoin(users, eq(user_classes.user_id, users.user_id))
+      .where(
+        and(
+          eq(user_classes.class_id, classId),
+          ne(user_classes.user_id, teacherId) //  สำคัญ: ไม่เอารายชื่ออาจารย์มาปน
+        )
+      )
+      .orderBy(users.first_name, users.last_name);
+
+    // --- 3. ดึงข้อมูลรูปโปรไฟล์จาก Clerk ---
+    // รวบรวม User ID ทั้งหมด (อาจารย์ + นักเรียน) เพื่อยิง API ครั้งเดียว
+    const allUserIds = [teacherId, ...students.map((s) => s.user_id)];
+    const clerkUsersMap = new Map();
+
+    if (allUserIds.length > 0) {
+      const clerkUserList = await clerkClient.users.getUserList({
+        userId: allUserIds,
+      });
+
+      clerkUserList.data.forEach((user) => {
+        clerkUsersMap.set(user.id, {
+          imageUrl: user.imageUrl,
+        });
+      });
+    }
+
+    // --- 4. ประกอบข้อมูลเพื่อส่งกลับ ---
+    const teacherProfile = clerkUsersMap.get(teacherId);
+    const responseData = {
+      className: classInfo.subject_name,
+      teacher: {
+        userId: teacherId,
+        fullName: `${classInfo.teacher_first_name} ${classInfo.teacher_last_name}`,
+        imageUrl: teacherProfile?.imageUrl || null, // ใช้รูปภาพจาก Clerk
+      },
+      students: students.map((student) => {
+        const studentProfile = clerkUsersMap.get(student.user_id);
+        return {
+          userId: student.user_id,
+          fullName: student.full_name,
+          imageUrl: studentProfile?.imageUrl || null, // ใช้รูปภาพจาก Clerk
+        };
+      }),
+    };
+
+    return res.status(200).json(responseData);
+  } catch (error) {
+    console.error("❌ Error fetching class members:", error.message);
+    console.error("Full error:", error);
+    return res
+      .status(error?.status || 500)
+      .json({ message: error?.message || "Internal server error" });
   }
 }

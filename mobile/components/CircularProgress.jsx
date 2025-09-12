@@ -6,6 +6,7 @@ import Animated, {
   withTiming,
   useAnimatedProps,
 } from "react-native-reanimated";
+import { useEffect } from "react";
 
 export const Card = ({ title, children }) => (
   <View className="bg-[#1E1E1E] rounded-2xl p-5 mb-6">
@@ -29,10 +30,13 @@ export const CircularProgress = ({
   const circumference = 2 * Math.PI * radius;
 
   const progress = useSharedValue(0);
-  progress.value = withTiming(percentage, {
-    duration: 1000,
-    easing: Easing.out(Easing.cubic),
-  });
+
+  useEffect(() => {
+    progress.value = withTiming(percentage, {
+      duration: 1000,
+      easing: Easing.out(Easing.cubic),
+    });
+  }, [percentage, progress]);
 
   const animatedProps = useAnimatedProps(() => ({
     strokeDashoffset: circumference - (progress.value / 100) * circumference,

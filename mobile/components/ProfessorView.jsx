@@ -1,7 +1,10 @@
 import { useState } from "react";
-import { View, Text, TextInput } from "react-native";
+import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import { Card, CircularProgress, PercentageBadge } from "./CircularProgress";
 import Dropdown from "./Dropdown";
+import { Entypo } from "@expo/vector-icons";
+import { Image } from "expo-image";
+import { router } from "expo-router";
 
 const filterItems = [
   { label: "ทั้งหมด", value: "all" },
@@ -119,7 +122,7 @@ const ProfessorView = ({ data }) => {
           </View>
         ) : (
           // กรณีปกติ: แสดงรายชื่อนักเรียน
-          filteredStudents.map((student, idx) => {
+          filteredStudents.map((student) => {
             const presentCount = student.attendances.filter(
               (a) => a.is_present
             ).length;
@@ -129,23 +132,55 @@ const ProfessorView = ({ data }) => {
                 : 0;
             return (
               <View
-                key={idx}
+                key={student.user_id}
                 className="flex-row justify-between items-center bg-[#2E2E2E] p-3 rounded-lg mb-2"
               >
                 <View className="flex-row items-center">
-                  <View className="w-9 h-9 rounded-full bg-[#6366F1]/30 items-center justify-center mr-3">
-                    <Text className="text-[#A78BFA] font-bold">
-                      {student.full_name.charAt(0)}
-                    </Text>
-                  </View>
+                  {student.imageUrl ? (
+                    <Image
+                      source={{ uri: student.imageUrl }}
+                      style={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: 18,
+                        marginRight: 12,
+                      }}
+                      contentFit="cover"
+                    />
+                  ) : (
+                    <View className="w-9 h-9 rounded-full bg-[#6366F1]/30 items-center justify-center mr-3">
+                      <Text className="text-[#A78BFA] font-bold">
+                        {student.full_name.charAt(0)}
+                      </Text>
+                    </View>
+                  )}
                   <Text className="text-white font-medium text-base">
                     {student.full_name}
                   </Text>
                 </View>
-                <PercentageBadge
-                  percentage={pct}
-                  text={`${pct}% (${presentCount}/${sessionsHeldSoFar})`}
-                />
+                <View className="flex-row items-center gap-2">
+                  <PercentageBadge
+                    percentage={pct}
+                    text={`${pct}% (${presentCount}/${sessionsHeldSoFar})`}
+                  />
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: "/(attendance)/studentAttendanceDetailPage",
+                        params: {
+                          userId: student.user_id,
+                          classId: data.class_id,
+                        },
+                      })
+                    }
+                  >
+                    <Entypo
+                      name="dots-three-vertical"
+                      size={14}
+                      color="white"
+                    />
+                  </TouchableOpacity>
+                </View>
               </View>
             );
           })
