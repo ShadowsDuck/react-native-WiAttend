@@ -112,7 +112,7 @@ const EditProfile = () => {
           </Text>
 
           <Input
-            label="รหัสนิสิต"
+            label="รหัสนิสิต/อาจารย์"
             value={formData.studentId}
             onChangeText={(value) =>
               setFormData({ ...formData, studentId: value })
@@ -145,6 +145,7 @@ const EditProfile = () => {
             value={formData.major}
             onChange={(value) => setFormData({ ...formData, major: value })}
             items={[
+              { label: "-", value: "ไม่ระบุ" },
               { label: "Computer Science", value: "Computer Science" },
               {
                 label: "Information Technology",
@@ -159,6 +160,7 @@ const EditProfile = () => {
             value={formData.year}
             onChange={(value) => setFormData({ ...formData, year: value })}
             items={[
+              { label: "-", value: 999 },
               { label: "ปี 1", value: 1 },
               { label: "ปี 2", value: 2 },
               { label: "ปี 3", value: 3 },

@@ -16,6 +16,7 @@ import {
 
 // -------------------- ENUM --------------------
 export const majorEnum = pgEnum("major_enum", [
+  "ไม่ระบุ",
   "Computer Science",
   "Information Technology",
 ]);

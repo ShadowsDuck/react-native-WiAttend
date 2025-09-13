@@ -78,7 +78,7 @@ const Profile = () => {
           {[
             {
               icon: "person-circle-outline",
-              label: "รหัสนิสิต",
+              label: "รหัสนิสิต/อาจารย์",
               value: users?.student_id || "NULL",
             },
             {
@@ -94,12 +94,13 @@ const Profile = () => {
             {
               icon: "school-outline",
               label: "สาขา",
-              value: users?.major || "NULL",
+              value:
+                users?.major === "ไม่ระบุ" ? "ไม่ระบุ" : users?.major || "NULL",
             },
             {
               icon: "podium-outline",
               label: "ชั้นปี",
-              value: users?.year || "NULL",
+              value: users?.year === 999 ? "ไม่ระบุ" : users?.year || "NULL",
             },
             {
               icon: "mail-outline",
