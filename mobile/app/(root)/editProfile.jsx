@@ -117,7 +117,6 @@ const EditProfile = () => {
             onChangeText={(value) =>
               setFormData({ ...formData, studentId: value })
             }
-            keyboardType="numeric"
           />
 
           {[
