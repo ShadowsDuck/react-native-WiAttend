@@ -95,12 +95,12 @@ const Profile = () => {
               icon: "school-outline",
               label: "สาขา",
               value:
-                users?.major === "ไม่ระบุ" ? "ไม่ระบุ" : users?.major || "NULL",
+                users?.major === "อาจารย์" ? "อาจารย์" : users?.major || "NULL",
             },
             {
               icon: "podium-outline",
               label: "ชั้นปี",
-              value: users?.year === 999 ? "ไม่ระบุ" : users?.year || "NULL",
+              value: users?.year === 999 ? "อาจารย์" : users?.year || "NULL",
             },
             {
               icon: "mail-outline",

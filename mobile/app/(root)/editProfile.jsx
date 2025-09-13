@@ -145,7 +145,7 @@ const EditProfile = () => {
             value={formData.major}
             onChange={(value) => setFormData({ ...formData, major: value })}
             items={[
-              { label: "-", value: "ไม่ระบุ" },
+              { label: "-", value: "อาจารย์" },
               { label: "Computer Science", value: "Computer Science" },
               {
                 label: "Information Technology",
