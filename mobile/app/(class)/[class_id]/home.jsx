@@ -6,7 +6,12 @@ import {
   TouchableOpacity,
   RefreshControl,
 } from "react-native";
-import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import {
+  useFocusEffect,
+  useGlobalSearchParams,
+  useLocalSearchParams,
+  useRouter,
+} from "expo-router";
 import { useCallback, useState, useEffect } from "react";
 import { Book1, User, Key, CopySuccess, Calendar } from "iconsax-react-native";
 import * as Clipboard from "expo-clipboard";
@@ -24,7 +29,7 @@ import ScheduleSectionHeader from "../../../components/ScheduleSectionHeader";
 import ScheduleCard from "../../../components/ScheduleCard";
 
 const HomePage = () => {
-  const { class_id } = useLocalSearchParams();
+  const { class_id } = useGlobalSearchParams();
   const router = useRouter();
 
   const {
