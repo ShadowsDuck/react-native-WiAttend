@@ -90,6 +90,8 @@ export async function exportAttendanceAsCsv(req, res) {
         full_name: sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as(
           "full_name"
         ),
+        major: users.major,
+        year: users.year,
       })
       .from(user_classes)
       .innerJoin(users, eq(user_classes.user_id, users.user_id))
@@ -99,7 +101,13 @@ export async function exportAttendanceAsCsv(req, res) {
           ne(user_classes.user_id, classData.owner_user_id)
         )
       )
-      .orderBy(asc(users.student_id));
+      .orderBy(
+        users.year,
+        users.major,
+        users.student_id,
+        users.first_name,
+        users.last_name
+      );
 
     const allAttendanceRecords = await db
       .select({
@@ -220,6 +228,8 @@ export async function exportAttendanceAsCsv(req, res) {
       const studentRow = {
         รหัสนักศึกษา: member.student_id || "",
         "ชื่อ-นามสกุล": member.full_name,
+        ชั้นปีที่: member.year,
+        สาขา: member.major,
       };
       const studentCheckedInSessions =
         attendanceMap.get(member.user_id) || new Set();

@@ -145,10 +145,10 @@ const EditProfile = () => {
             onChange={(value) => setFormData({ ...formData, major: value })}
             items={[
               { label: "-", value: "อาจารย์" },
-              { label: "Computer Science", value: "Computer Science" },
+              { label: "วิทยาการคอมพิวเตอร์", value: "วิทยาการคอมพิวเตอร์" },
               {
-                label: "Information Technology",
-                value: "Information Technology",
+                label: "เทคโนโลยีสารสนเทศ",
+                value: "เทคโนโลยีสารสนเทศ",
               },
             ]}
             search={false}

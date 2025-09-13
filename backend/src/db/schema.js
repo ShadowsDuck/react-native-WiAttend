@@ -17,8 +17,8 @@ import {
 // -------------------- ENUM --------------------
 export const majorEnum = pgEnum("major_enum", [
   "อาจารย์",
-  "Computer Science",
-  "Information Technology",
+  "วิทยาการคอมพิวเตอร์",
+  "เทคโนโลยีสารสนเทศ",
 ]);
 
 export const dayEnum = pgEnum("day_enum", [

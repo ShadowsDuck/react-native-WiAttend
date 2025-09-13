@@ -123,9 +123,16 @@ const StudentAttendanceDetailPage = () => {
           <Text className="text-white text-3xl font-bold">
             สรุปการเข้าเรียน
           </Text>
-          <Text className="text-gray-400 mt-1">
-            ของ {studentData.student.full_name}
-          </Text>
+          <View>
+            <Text className="text-gray-300 text-lg mt-2">
+              ของ {studentData.student.full_name}
+            </Text>
+            <Text className="text-gray-400 mt-2">
+              รหัสนิสิต {studentData?.student?.student_id || "null"} ชั้นปีที่{" "}
+              {studentData?.student?.year || "null"} สาขา{" "}
+              {studentData?.student?.major || "null"}
+            </Text>
+          </View>
         </View>
 
         <View className="px-5 mt-5">

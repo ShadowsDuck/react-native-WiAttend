@@ -255,11 +255,20 @@ export async function getAttendanceSummary(req, res) {
           role: sql`CASE WHEN ${classes.owner_user_id} = ${users.user_id} THEN 'teacher' ELSE 'student' END`.as(
             "role"
           ),
+          major: users.major,
+          year: users.year,
         })
         .from(user_classes)
         .innerJoin(users, eq(user_classes.user_id, users.user_id))
         .innerJoin(classes, eq(user_classes.class_id, classes.class_id))
-        .where(eq(user_classes.class_id, classId));
+        .where(eq(user_classes.class_id, classId))
+        .orderBy(
+          users.year,
+          users.major,
+          users.student_id,
+          users.first_name,
+          users.last_name
+        );
 
       const studentMembers = classMembers.filter(
         (member) => member.role !== "teacher"
@@ -458,11 +467,14 @@ export async function getStudentAttendanceDetail(req, res) {
     // ดึง student + ตรวจสอบ enrollment ไปพร้อมกัน
     const [studentDetail] = await db
       .select({
+        student_id: users.student_id,
         first_name: users.first_name,
         last_name: users.last_name,
         full_name: sql`CONCAT(${users.first_name}, ' ', ${users.last_name})`.as(
           "full_name"
         ),
+        major: users.major,
+        year: users.year,
       })
       .from(user_classes)
       .innerJoin(users, eq(user_classes.user_id, users.user_id))

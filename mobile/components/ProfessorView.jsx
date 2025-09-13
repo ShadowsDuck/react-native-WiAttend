@@ -159,9 +159,18 @@ const ProfessorView = ({ data }) => {
                       </Text>
                     </View>
                   )}
-                  <Text className="text-white font-medium text-base">
-                    {student.full_name}
-                  </Text>
+
+                  <View>
+                    <Text className="text-white font-medium text-base">
+                      {student.full_name}
+                    </Text>
+                    <Text className="text-gray-400 text-xs mt-1">
+                      รหัสนิสิต {student.student_id}
+                    </Text>
+                    <Text className="text-gray-400 text-xs mt-1">
+                      ชั้นปีที่ {student.year} สาขา {student.major}
+                    </Text>
+                  </View>
                 </View>
                 <View className="flex-row items-center gap-2">
                   <PercentageBadge
