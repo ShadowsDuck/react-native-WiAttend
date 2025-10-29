@@ -31,11 +31,6 @@ export const dayEnum = pgEnum("day_enum", [
   "saturday",
 ]);
 
-// export const attendanceStatusEnum = pgEnum("attendance_status", [
-//   "present",
-//   "absent",
-// ]);
-
 // -------------------- USERS --------------------
 // ตารางข้อมูลผู้ใช้
 export const users = pgTable("users", {
@@ -45,6 +40,7 @@ export const users = pgTable("users", {
   last_name: text("last_name"),
   major: majorEnum("major"),
   year: smallint("year"),
+  device_id: varchar("device_id").unique(),
   created_at: timestamp("created_at").defaultNow().notNull(),
 });
 

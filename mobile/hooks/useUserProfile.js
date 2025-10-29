@@ -25,13 +25,13 @@ export const useUserProfile = () => {
     }
   }, []);
 
-  const createUserProfile = async () => {
+  const createUserProfile = async (device_id) => {
     try {
       const token = await getToken();
 
       const res = await axios.post(
         `${API_URL}/users/profile`,
-        {}, // ถ้า backend ไม่ต้องการ body
+        { device_id },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -41,9 +41,6 @@ export const useUserProfile = () => {
       );
       return res.data;
     } catch (error) {
-      // console.error("❌ Error creating user:", error.response?.data || error);
-
-      // ถ้าเป็น duplicate key หรือ user มีอยู่แล้ว - ไม่ต้อง throw
       if (
         error.response?.status === 409 ||
         error.response?.status === 400 ||
@@ -53,7 +50,7 @@ export const useUserProfile = () => {
         return { message: "User exists" };
       }
 
-      throw error; // throw เฉพาะ error จริงๆ
+      throw error;
     }
   };
 

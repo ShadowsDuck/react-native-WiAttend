@@ -26,37 +26,74 @@ export async function getUserProfileByUserId(req, res) {
 export async function upsertUserProfile(req, res) {
   try {
     const { userId } = getAuth(req);
+    const { device_id } = req.body;
 
+    if (!device_id) {
+      return res.status(400).json({ message: "Missing device_id" });
+    }
+
+    // หา user ปัจจุบัน
     let user = await db.query.users.findFirst({
       where: (users, { eq }) => eq(users.user_id, userId),
     });
 
+    // ===== กรณี user ใหม่ =====
     if (!user) {
-      console.log(`User ${userId} not found. Creating new profile.`);
+      // ตรวจสอบว่า device_id มีคนใช้แล้วหรือไม่
+      const existingDevice = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.device_id, device_id),
+      });
 
-      try {
-        const newUser = await db
-          .insert(users)
-          .values({ user_id: userId })
-          .returning();
-        user = newUser[0];
-        return res.status(201).json(user);
-      } catch (insertError) {
-        // Handle duplicate key error
-        if (insertError.code === "23505" || insertError.constraint) {
-          console.log(`User ${userId} created by another process. Fetching...`);
-          user = await db.query.users.findFirst({
-            where: (users, { eq }) => eq(users.user_id, userId),
+      if (existingDevice) {
+        return res
+          .status(403)
+          .json({
+            message: "This device is already registered to another user",
           });
-          if (user) {
-            return res.status(200).json(user);
-          }
-        }
-        throw insertError;
       }
+
+      // สร้าง user ใหม่พร้อม device_id
+      const newUser = await db
+        .insert(users)
+        .values({ user_id: userId, device_id })
+        .returning();
+
+      return res.status(201).json(newUser[0]);
     }
 
-    console.log(`User ${userId} already exists. Returning profile.`);
+    // ===== กรณี user มีอยู่แล้ว =====
+    if (!user.device_id) {
+      // user นี้ยังไม่มีเครื่อง → ตรวจสอบ device_id ว่าใครใช้แล้วหรือยัง
+      const existingDevice = await db.query.users.findFirst({
+        where: (users, { eq }) => eq(users.device_id, device_id),
+      });
+
+      if (existingDevice) {
+        return res
+          .status(403)
+          .json({
+            message: "This device is already registered to another user",
+          });
+      }
+
+      // บันทึก device_id เครื่องนี้
+      const updatedUser = await db
+        .update(users)
+        .set({ device_id })
+        .where(eq(users.user_id, userId))
+        .returning();
+
+      return res.status(200).json(updatedUser[0]);
+    }
+
+    // ===== กรณี user มี device_id อยู่แล้ว =====
+    if (user.device_id !== device_id) {
+      return res
+        .status(403)
+        .json({ message: "Access denied: Unauthorized device" });
+    }
+
+    // device_id ตรง → return user
     return res.status(200).json(user);
   } catch (error) {
     console.error("Error in upsertUserProfile", error);
