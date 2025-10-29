@@ -50,7 +50,7 @@ export const useSocialAuth = () => {
           // ตรวจสอบว่าเป็น Error จาก device ซ้ำหรือไม่ (Backend ส่ง 403)
           if (profileError.response?.status === 403) {
             Alert.alert(
-              "ลงทะเบียนไม่สำเร็จ",
+              "เข้าสู่ระบบไม่สำเร็จ",
               "อุปกรณ์นี้ได้ถูกลงทะเบียนกับบัญชีผู้ใช้อื่นแล้ว"
             );
             await signOut(); // สั่ง Logout ทันที
